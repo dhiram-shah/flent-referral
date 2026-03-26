@@ -4,9 +4,10 @@ import { PrismaClient } from '@/generated/prisma/client'
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
 function createPrismaClient() {
-  const url = process.env.DATABASE_URL
-  console.log('[prisma] DATABASE_URL host:', url ? new URL(url).host : 'MISSING')
-  const adapter = new PrismaPg({ connectionString: url! })
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL!,
+    ssl: { rejectUnauthorized: false },
+  })
   return new PrismaClient({ adapter })
 }
 
