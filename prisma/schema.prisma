@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum ReferralStatus {
+  INTERESTED
+  AGREEMENT_SIGNED
+  COMPLETED
+  DISQUALIFIED
+}
+
+enum RedemptionStatus {
+  PENDING
+  FULFILLED
+  REJECTED
+}
+
+enum AdminRole {
+  ADMIN
+  VIEWER
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model Referrer {
+  id              String    @id @default(cuid())
+  name            String
+  phone           String    @unique
+  email           String    @unique
+  city            String?
+  referralCode    String    @unique
+  isTenant        Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  isDisqualified  Boolean   @default(false)
+  disqualifyNote  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  referrals   Referral[]
+  redemptions Redemption[]
+  progress    ReferrerProgress?
+  otpSessions OtpSession[]
+  notifications NotificationLog[]
+}
+
+model Referral {
+  id             String        @id @default(cuid())
+  referrerId     String
+  refereeName    String
+  refereePhone   String
+  refereeEmail   String?
+  hubspotId      String?       @unique
+  status         ReferralStatus @default(INTERESTED)
+  ipAddress      String?
+  isDisqualified Boolean       @default(false)
+  disqualifyNote String?
+  interestedAt   DateTime      @default(now())
+  signedAt       DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  referrer Referrer @relation(fields: [referrerId], references: [id])
+
+  @@index([referrerId])
+  @@index([refereePhone])
+  @@index([status])
+}
+
+model MilestoneConfig {
+  id                String   @id @default(cuid())
+  tierNumber        Int      @unique
+  referralsRequired Int
+  rewardName        String
+  rewardDescription String?
+  rewardValue       String?
+  requiresExtraInfo Boolean  @default(false)
+  extraInfoLabel    String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  redemptions Redemption[]
+}
+
+model Redemption {
+  id          String           @id @default(cuid())
+  referrerId  String
+  milestoneId String
+  status      RedemptionStatus @default(PENDING)
+  extraInfo   Json?
+  notes       String?
+  requestedAt DateTime         @default(now())
+  fulfilledAt DateTime?
+  updatedAt   DateTime         @updatedAt
+
+  referrer  Referrer        @relation(fields: [referrerId], references: [id])
+  milestone MilestoneConfig @relation(fields: [milestoneId], references: [id])
+
+  @@index([referrerId])
+  @@index([status])
+}
+
+model ReferrerProgress {
+  referrerId             String    @id
+  currentStreakCount      Int       @default(0)
+  lifetimeCompletedCount Int       @default(0)
+  currentMilestoneId     String?
+  lastResetAt            DateTime?
+  updatedAt              DateTime  @updatedAt
+
+  referrer Referrer @relation(fields: [referrerId], references: [id])
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         AdminRole @default(VIEWER)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+}
+
+model OtpSession {
+  id         String   @id @default(cuid())
+  email      String
+  otp        String
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  verified   Boolean  @default(false)
+  referrerId String?
+  createdAt  DateTime @default(now())
+
+  referrer Referrer? @relation(fields: [referrerId], references: [id])
+
+  @@index([email])
+}
+
+model NotificationLog {
+  id         String   @id @default(cuid())
+  referrerId String
+  channel    String
+  event      String
+  status     String
+  sentAt     DateTime @default(now())
+
+  referrer Referrer @relation(fields: [referrerId], references: [id])
+
+  @@index([referrerId])
+}
