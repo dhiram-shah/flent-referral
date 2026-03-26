@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
     <main className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg)' }}>
       <div style={{ width: '100%', maxWidth: 400 }}>
         <div className="text-center mb-8">
-          <span style={{ color: 'var(--brand)', fontWeight: 800, fontSize: 28 }}>flent</span>
+          <img src="/logo.png" alt="flent" style={{ height: 26, display: 'block', margin: '0 auto' }} />
           <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 4 }}>Admin Portal</p>
         </div>
         <div style={{ background: 'var(--surface)', borderRadius: 20, padding: '36px 32px', border: '1px solid var(--border)', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
               <input type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} required style={{ width: '100%', padding: '11px 14px', borderRadius: 10, border: '1px solid var(--border)', fontSize: 15, background: 'var(--bg)' }} />
             </div>
             {error && <div style={{ background: '#FEF2F2', color: 'var(--danger)', fontSize: 13, padding: '10px 14px', borderRadius: 8 }}>{error}</div>}
-            <button type="submit" disabled={loading} style={{ padding: '13px', borderRadius: 10, border: 'none', background: loading ? '#C4B5FD' : 'var(--brand)', color: '#fff', fontWeight: 700, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer' }}>
+            <button type="submit" disabled={loading} style={{ padding: '13px', borderRadius: 10, border: 'none', background: loading ? '#7B93AB' : 'var(--brand)', color: '#fff', fontWeight: 700, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer' }}>
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>

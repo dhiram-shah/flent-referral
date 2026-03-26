@@ -23,7 +23,7 @@ export default async function LandingPage() {
       <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }} className="sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <a href="https://flent.in" className="flex items-center gap-2">
-            <span style={{ color: 'var(--brand)', fontWeight: 700, fontSize: 22 }}>flent</span>
+            <img src="/logo.png" alt="flent" style={{ height: 22, display: 'block' }} />
             <span style={{ background: 'var(--brand-light)', color: 'var(--brand)', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 99, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Referral Program</span>
           </a>
           <div className="flex items-center gap-3">
@@ -96,7 +96,7 @@ export default async function LandingPage() {
 
       <section className="py-16">
         <div className="max-w-3xl mx-auto px-6 text-center">
-          <div style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)', borderRadius: 24, padding: '48px 32px' }}>
+          <div style={{ background: 'linear-gradient(135deg, #18293D 0%, #0D1825 100%)', borderRadius: 24, padding: '48px 32px' }}>
             <h2 style={{ color: '#fff', fontSize: 32, fontWeight: 700, marginBottom: 12 }}>Ready to start earning?</h2>
             <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16, marginBottom: 28 }}>Join the Flent community and earn rewards for every successful referral.</p>
             <Link href="/signup" style={{ display: 'inline-block', background: '#fff', color: 'var(--brand)', padding: '16px 40px', borderRadius: 12, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>

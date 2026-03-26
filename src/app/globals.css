@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --brand: #7C3AED;
-  --brand-dark: #5B21B6;
-  --brand-light: #EDE9FE;
+  --brand: #18293D;
+  --brand-dark: #0D1825;
+  --brand-light: #E6ECF2;
   --success: #10B981;
   --warning: #F59E0B;
   --danger: #EF4444;
-  --bg: #F9FAFB;
+  --bg: #F7F8FA;
   --surface: #FFFFFF;
   --text: #111827;
   --muted: #6B7280;
-  --border: #E5E7EB;
+  --border: #E2E6EA;
 }
 
 @theme inline {
@@ -40,9 +40,9 @@ body {
 }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(124, 58, 237, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(24, 41, 61, 0.35); }
+  70% { box-shadow: 0 0 0 10px rgba(24, 41, 61, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(24, 41, 61, 0); }
 }
 
 @keyframes slide-up {

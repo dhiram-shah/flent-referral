@@ -137,7 +137,7 @@ export default function DashboardPage() {
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
       <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 50 }}>
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="/" style={{ color: 'var(--brand)', fontWeight: 800, fontSize: 22, textDecoration: 'none' }}>flent</a>
+          <a href="/"><img src="/logo.png" alt="flent" style={{ height: 22, display: 'block' }} /></a>
           <div className="flex items-center gap-4">
             <span style={{ fontSize: 14, color: 'var(--muted)' }} className="hidden sm:block">Hi, {referrer.name.split(' ')[0]} 👋</span>
             <button onClick={handleLogout} style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Sign out</button>
@@ -149,7 +149,7 @@ export default function DashboardPage() {
         {/* ── Top cards ────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Referral code card */}
-          <div style={{ background: 'linear-gradient(135deg, #7C3AED, #4F46E5)', borderRadius: 16, padding: 24, color: '#fff', gridColumn: 'span 2' }} className="md:col-span-2">
+          <div style={{ background: 'linear-gradient(135deg, #18293D, #0D1825)', borderRadius: 16, padding: 24, color: '#fff', gridColumn: 'span 2' }} className="md:col-span-2">
             <p style={{ fontSize: 12, opacity: 0.7, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Your Referral Code</p>
             <div className="flex items-center gap-3 flex-wrap">
               <span style={{ fontSize: 'clamp(20px, 4vw, 32px)', fontWeight: 700, letterSpacing: 3 }}>{referrer.referralCode}</span>
@@ -211,7 +211,7 @@ export default function DashboardPage() {
                 <span>{next.referralsRequired} needed</span>
               </div>
               <div style={{ background: 'var(--bg)', borderRadius: 99, height: 10, overflow: 'hidden' }}>
-                <div style={{ background: 'linear-gradient(90deg, var(--brand), #4F46E5)', height: '100%', width: `${progressPct}%`, borderRadius: 99, transition: 'width 0.6s ease' }} />
+                <div style={{ background: 'linear-gradient(90deg, var(--brand), #2A4A6B)', height: '100%', width: `${progressPct}%`, borderRadius: 99, transition: 'width 0.6s ease' }} />
               </div>
             </div>
           )}
@@ -226,7 +226,7 @@ export default function DashboardPage() {
                   key={m.id}
                   style={{
                     minWidth: 120,
-                    background: isUnlocked ? 'linear-gradient(135deg, #7C3AED20, #4F46E520)' : 'var(--bg)',
+                    background: isUnlocked ? 'linear-gradient(135deg, #18293D18, #2A4A6B18)' : 'var(--bg)',
                     border: isCurrent ? '2px solid var(--brand)' : isUnlocked ? '2px solid var(--success)' : '1px solid var(--border)',
                     borderRadius: 14,
                     padding: '14px 12px',
@@ -312,7 +312,7 @@ export default function DashboardPage() {
                 {error && <div style={{ background: '#FEF2F2', color: 'var(--danger)', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>{error}</div>}
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button onClick={() => setShowRedeemModal(false)} style={{ flex: 1, padding: '12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
-                  <button onClick={handleRedeem} disabled={redeemLoading} style={{ flex: 2, padding: '12px', borderRadius: 10, border: 'none', background: redeemLoading ? '#C4B5FD' : 'var(--brand)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: redeemLoading ? 'not-allowed' : 'pointer' }}>
+                  <button onClick={handleRedeem} disabled={redeemLoading} style={{ flex: 2, padding: '12px', borderRadius: 10, border: 'none', background: redeemLoading ? '#7B93AB' : 'var(--brand)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: redeemLoading ? 'not-allowed' : 'pointer' }}>
                     {redeemLoading ? 'Claiming…' : 'Yes, claim this reward 🎁'}
                   </button>
                 </div>

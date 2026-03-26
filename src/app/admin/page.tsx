@@ -293,7 +293,7 @@ export default function AdminDashboard() {
                           {r.progress?.currentStreakCount ?? 0} / {r.progress?.lifetimeCompletedCount ?? 0}
                         </td>
                         <td style={{ padding: '12px 16px' }}>
-                          <span style={{ background: r.isTenant ? '#D1FAE5' : '#EDE9FE', color: r.isTenant ? '#059669' : 'var(--brand)', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 99 }}>
+                          <span style={{ background: r.isTenant ? '#D1FAE5' : 'var(--brand-light)', color: r.isTenant ? '#059669' : 'var(--brand)', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 99 }}>
                             {r.isTenant ? 'Tenant' : 'External'}
                           </span>
                         </td>

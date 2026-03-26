@@ -72,8 +72,8 @@ export default function SignupPage() {
       <div style={{ width: '100%', maxWidth: 440 }}>
         {/* Logo */}
         <div className="text-center mb-8">
-          <a href="/" style={{ color: 'var(--brand)', fontWeight: 800, fontSize: 28, textDecoration: 'none' }}>
-            flent
+          <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+            <img src="/logo.png" alt="flent" style={{ height: 26, display: 'block' }} />
           </a>
           <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 4 }}>Referral Program</p>
         </div>
@@ -215,7 +215,7 @@ export default function SignupPage() {
               </p>
               <div
                 style={{
-                  background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
+                  background: 'linear-gradient(135deg, #18293D, #0D1825)',
                   borderRadius: 16,
                   padding: '24px 20px',
                   marginBottom: 24,
@@ -316,7 +316,7 @@ function btnStyle(disabled: boolean): React.CSSProperties {
     padding: '13px 20px',
     borderRadius: 10,
     border: 'none',
-    background: disabled ? '#C4B5FD' : 'var(--brand)',
+    background: disabled ? '#7B93AB' : 'var(--brand)',
     color: '#fff',
     fontWeight: 700,
     fontSize: 15,
