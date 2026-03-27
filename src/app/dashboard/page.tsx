@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 
 interface Milestone {
   id: string
@@ -47,7 +46,6 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
 }
 
 export default function DashboardPage() {
-  const router = useRouter()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -60,7 +58,7 @@ export default function DashboardPage() {
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch('/api/referrers/me')
-      if (res.status === 401) { router.push('/signup'); return }
+      if (res.status === 401) { window.location.href = '/signup'; return }
       const json = await res.json()
       setData(json)
     } catch {
@@ -68,7 +66,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [router])
+  }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -111,7 +109,7 @@ export default function DashboardPage() {
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/')
+    window.location.href = '/'
   }
 
   if (loading) {
@@ -121,6 +119,7 @@ export default function DashboardPage() {
           <div style={{ width: 40, height: 40, border: '3px solid var(--brand-light)', borderTopColor: 'var(--brand)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
           <p style={{ color: 'var(--muted)', fontSize: 14 }}>Loading your dashboard…</p>
         </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
@@ -149,20 +148,29 @@ export default function DashboardPage() {
         {/* ── Top cards ────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Referral code card */}
-          <div style={{ background: 'linear-gradient(135deg, #18293D, #0D1825)', borderRadius: 16, padding: 24, color: '#fff', gridColumn: 'span 2' }} className="md:col-span-2">
-            <p style={{ fontSize: 12, opacity: 0.7, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Your Referral Code</p>
+          <div
+            style={{
+              background: 'var(--brand)',
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M14 8l1.5 4.5L20 14l-4.5 1.5L14 20l-1.5-4.5L8 14l4.5-1.5z' fill='%23FFFFFF' fill-opacity='0.06'/%3E%3C/svg%3E\")",
+              borderRadius: 20,
+              padding: 24,
+              color: '#fff',
+            }}
+            className="md:col-span-2"
+          >
+            <p style={{ fontSize: 11, opacity: 0.65, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Your Referral Code</p>
             <div className="flex items-center gap-3 flex-wrap">
-              <span style={{ fontSize: 'clamp(20px, 4vw, 32px)', fontWeight: 700, letterSpacing: 3 }}>{referrer.referralCode}</span>
-              <div className="flex gap-2">
-                <button onClick={copyCode} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+              <span className="serif" style={{ fontSize: 'clamp(20px, 4vw, 32px)', fontWeight: 700, letterSpacing: 3 }}>{referrer.referralCode}</span>
+              <div className="flex gap-2 flex-wrap">
+                <button onClick={copyCode} style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', padding: '8px 18px', borderRadius: 999, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
                   {copied ? '✓ Copied!' : 'Copy'}
                 </button>
-                <button onClick={shareWhatsApp} style={{ background: '#25D366', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                <button onClick={shareWhatsApp} style={{ background: '#25D366', border: 'none', color: '#fff', padding: '8px 18px', borderRadius: 999, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
                   Share on WhatsApp
                 </button>
               </div>
             </div>
-            <p style={{ fontSize: 12, opacity: 0.6, marginTop: 12 }}>Friends enter this code when enquiring on Flent</p>
+            <p style={{ fontSize: 12, opacity: 0.55, marginTop: 12 }}>Friends enter this code when enquiring on Flent</p>
           </div>
 
           {/* Stats card */}
@@ -192,7 +200,7 @@ export default function DashboardPage() {
               )}
             </div>
             {progress.canRedeem && (
-              <button onClick={() => setShowRedeemModal(true)} style={{ background: 'var(--brand)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }} className="animate-pulse-ring">
+              <button onClick={() => setShowRedeemModal(true)} className="btn-pill animate-pulse-ring" style={{ fontSize: 14, padding: '10px 24px' }}>
                 🎁 Claim Reward
               </button>
             )}
@@ -262,7 +270,7 @@ export default function DashboardPage() {
               <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 16 }}>
                 Share your code with friends looking for quality co-living in Bangalore.
               </p>
-              <button onClick={shareWhatsApp} style={{ background: '#25D366', border: 'none', color: '#fff', padding: '12px 24px', borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+              <button onClick={shareWhatsApp} style={{ background: '#25D366', border: 'none', color: '#fff', padding: '12px 24px', borderRadius: 999, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
                 Share on WhatsApp
               </button>
             </div>
@@ -311,8 +319,8 @@ export default function DashboardPage() {
                 )}
                 {error && <div style={{ background: '#FEF2F2', color: 'var(--danger)', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>{error}</div>}
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={() => setShowRedeemModal(false)} style={{ flex: 1, padding: '12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
-                  <button onClick={handleRedeem} disabled={redeemLoading} style={{ flex: 2, padding: '12px', borderRadius: 10, border: 'none', background: redeemLoading ? '#7B93AB' : 'var(--brand)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: redeemLoading ? 'not-allowed' : 'pointer' }}>
+                  <button onClick={() => setShowRedeemModal(false)} className="btn-pill-outline" style={{ flex: 1, padding: '12px' }}>Cancel</button>
+                  <button onClick={handleRedeem} disabled={redeemLoading} className="btn-pill" style={{ flex: 2, padding: '12px' }}>
                     {redeemLoading ? 'Claiming…' : 'Yes, claim this reward 🎁'}
                   </button>
                 </div>
@@ -322,7 +330,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </main>
   )
 }

@@ -6,7 +6,7 @@ function getResend(): Resend {
   return _resend
 }
 
-const FROM = process.env.RESEND_FROM_EMAIL ?? 'referrals@flent.in'
+const FROM = process.env.RESEND_FROM_EMAIL ?? 'referrals@email.flent.in'
 
 export async function sendOtpEmail(email: string, name: string, otp: string): Promise<void> {
   await getResend().emails.send({

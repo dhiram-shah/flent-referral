@@ -2,16 +2,15 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 type Step = 'form' | 'otp' | 'success'
 
 export default function SignupPage() {
-  const router = useRouter()
   const [step, setStep] = useState<Step>('form')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [referralCode, setReferralCode] = useState('')
+  const [copied, setCopied] = useState(false)
 
   const [form, setForm] = useState({ name: '', phone: '', email: '', city: '' })
   const [otp, setOtp] = useState('')
@@ -64,6 +63,12 @@ export default function SignupPage() {
     }
   }
 
+  function copyCode() {
+    navigator.clipboard.writeText(referralCode)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <main
       className="min-h-screen flex items-center justify-center px-4 py-12"
@@ -73,24 +78,26 @@ export default function SignupPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
-            <img src="/logo.png" alt="flent" style={{ height: 26, display: 'block' }} />
+            <img src="/logo.png" alt="flent" style={{ height: 26, display: 'block', margin: '0 auto' }} />
           </a>
-          <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 4 }}>Referral Program</p>
+          <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 6 }}>Referral Program</p>
         </div>
 
         <div
           style={{
             background: 'var(--surface)',
-            borderRadius: 20,
+            borderRadius: 24,
             padding: '36px 32px',
             border: '1px solid var(--border)',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+            boxShadow: '0 4px 32px rgba(24,41,61,0.07)',
           }}
         >
-          {/* ── Step: Form ─────────────────────────────────────────────────── */}
+          {/* ── Step: Form ───────────────────────────────────────────────── */}
           {step === 'form' && (
             <>
-              <h1 style={{ fontWeight: 700, fontSize: 24, marginBottom: 4 }}>Join the program</h1>
+              <h1 className="serif" style={{ fontWeight: 800, fontSize: 26, marginBottom: 4 }}>
+                Join the program
+              </h1>
               <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 28 }}>
                 Enter your details to get your unique referral code.
               </p>
@@ -136,25 +143,27 @@ export default function SignupPage() {
                   />
                 </Field>
                 {error && <ErrorMsg>{error}</ErrorMsg>}
-                <button type="submit" disabled={loading} style={btnStyle(loading)}>
+                <button type="submit" disabled={loading} className="btn-pill" style={{ width: '100%', marginTop: 4 }}>
                   {loading ? 'Sending OTP…' : 'Get my referral code →'}
                 </button>
               </form>
               <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--muted)' }}>
                 Already have an account?{' '}
-                <Link href="/dashboard" style={{ color: 'var(--brand)' }}>
-                  Go to dashboard
+                <Link href="/login" style={{ color: 'var(--brand)', fontWeight: 600 }}>
+                  Sign in
                 </Link>
               </p>
             </>
           )}
 
-          {/* ── Step: OTP ──────────────────────────────────────────────────── */}
+          {/* ── Step: OTP ────────────────────────────────────────────────── */}
           {step === 'otp' && (
             <>
-              <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📧</div>
-                <h1 style={{ fontWeight: 700, fontSize: 22, marginBottom: 8 }}>Check your email</h1>
+              <div style={{ textAlign: 'center', marginBottom: 28 }}>
+                <div style={{ fontSize: 44, marginBottom: 12 }}>📧</div>
+                <h1 className="serif" style={{ fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
+                  Check your email
+                </h1>
                 <p style={{ color: 'var(--muted)', fontSize: 14 }}>
                   We sent a 6-digit code to <strong>{form.email}</strong>.
                   <br />
@@ -169,7 +178,10 @@ export default function SignupPage() {
                   maxLength={6}
                   placeholder="123456"
                   value={otp}
-                  onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '')); setError('') }}
+                  onChange={(e) => {
+                    setOtp(e.target.value.replace(/\D/g, ''))
+                    setError('')
+                  }}
                   required
                   style={{
                     ...inputStyle,
@@ -181,7 +193,12 @@ export default function SignupPage() {
                   autoFocus
                 />
                 {error && <ErrorMsg>{error}</ErrorMsg>}
-                <button type="submit" disabled={loading || otp.length < 6} style={btnStyle(loading || otp.length < 6)}>
+                <button
+                  type="submit"
+                  disabled={loading || otp.length < 6}
+                  className="btn-pill"
+                  style={{ width: '100%' }}
+                >
                   {loading ? 'Verifying…' : 'Verify & get my code'}
                 </button>
                 <button
@@ -193,10 +210,18 @@ export default function SignupPage() {
                 </button>
               </form>
               <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: 'var(--muted)' }}>
-                Didn&apos;t receive it? Check your spam folder or{' '}
+                Didn&apos;t receive it? Check spam or{' '}
                 <button
                   onClick={handleSignup as unknown as React.MouseEventHandler<HTMLButtonElement>}
-                  style={{ background: 'none', border: 'none', color: 'var(--brand)', cursor: 'pointer', fontSize: 13, padding: 0 }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--brand)',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    padding: 0,
+                    fontWeight: 600,
+                  }}
                 >
                   resend
                 </button>
@@ -209,71 +234,84 @@ export default function SignupPage() {
           {step === 'success' && (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 52, marginBottom: 12 }}>🎉</div>
-              <h1 style={{ fontWeight: 700, fontSize: 22, marginBottom: 8 }}>You&apos;re in!</h1>
+              <h1 className="serif" style={{ fontWeight: 800, fontSize: 24, marginBottom: 8 }}>
+                You&apos;re in!
+              </h1>
               <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 24 }}>
                 Your referral code is ready. Share it with friends looking for co-living in Bangalore.
               </p>
               <div
                 style={{
-                  background: 'linear-gradient(135deg, #18293D, #0D1825)',
-                  borderRadius: 16,
+                  background: 'var(--brand)',
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M14 8l1.5 4.5L20 14l-4.5 1.5L14 20l-1.5-4.5L8 14l4.5-1.5z' fill='%23FFFFFF' fill-opacity='0.07'/%3E%3C/svg%3E\")",
+                  borderRadius: 18,
                   padding: '24px 20px',
-                  marginBottom: 24,
+                  marginBottom: 20,
                 }}
               >
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 2 }}>
+                <p
+                  style={{
+                    color: 'rgba(255,255,255,0.65)',
+                    fontSize: 11,
+                    marginBottom: 8,
+                    textTransform: 'uppercase',
+                    letterSpacing: 2,
+                  }}
+                >
                   Your Referral Code
                 </p>
-                <p style={{ color: '#fff', fontSize: 26, fontWeight: 700, letterSpacing: 4, margin: 0 }}>
+                <p className="serif" style={{ color: '#fff', fontSize: 28, fontWeight: 700, letterSpacing: 4, margin: 0 }}>
                   {referralCode}
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(referralCode)
-                }}
-                style={{
-                  ...btnStyle(false),
-                  marginBottom: 12,
-                  width: '100%',
-                }}
-              >
-                Copy code
-              </button>
-              <button
-                onClick={() => router.push('/dashboard')}
-                style={{
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: 10,
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface)',
-                  color: 'var(--text)',
-                  fontWeight: 600,
-                  fontSize: 14,
-                  cursor: 'pointer',
-                }}
-              >
-                Go to my dashboard →
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button onClick={copyCode} className="btn-pill" style={{ width: '100%' }}>
+                  {copied ? '✓ Copied!' : 'Copy code'}
+                </button>
+                {/* Full-page navigation ensures proxy.ts reads the fresh cookie */}
+                <a
+                  href="/dashboard"
+                  className="btn-pill-outline"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                >
+                  Go to my dashboard →
+                </a>
+              </div>
             </div>
           )}
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 12, color: 'var(--muted)' }}>
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--muted)' }}>
           By joining, you agree to Flent&apos;s{' '}
-          <a href="https://flent.in/terms" style={{ color: 'var(--brand)' }}>Terms</a> &amp;{' '}
-          <a href="https://flent.in/privacy" style={{ color: 'var(--brand)' }}>Privacy Policy</a>.
+          <a href="https://flent.in/terms" style={{ color: 'var(--brand)' }}>
+            Terms
+          </a>{' '}
+          &amp;{' '}
+          <a href="https://flent.in/privacy" style={{ color: 'var(--brand)' }}>
+            Privacy Policy
+          </a>
+          .
         </p>
       </div>
     </main>
   )
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string
+  required?: boolean
+  children: React.ReactNode
+}) {
   return (
     <div>
-      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>
+      <label
+        style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}
+      >
         {label} {required && <span style={{ color: 'var(--danger)' }}>*</span>}
       </label>
       {children}
@@ -287,7 +325,7 @@ function ErrorMsg({ children }: { children: React.ReactNode }) {
       style={{
         background: '#FEF2F2',
         border: '1px solid #FECACA',
-        borderRadius: 8,
+        borderRadius: 10,
         padding: '10px 14px',
         fontSize: 13,
         color: 'var(--danger)',
@@ -300,27 +338,12 @@ function ErrorMsg({ children }: { children: React.ReactNode }) {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '11px 14px',
-  borderRadius: 10,
-  border: '1px solid var(--border)',
+  padding: '12px 16px',
+  borderRadius: 12,
+  border: '1.5px solid var(--border)',
   fontSize: 15,
   outline: 'none',
   background: 'var(--bg)',
   color: 'var(--text)',
   transition: 'border-color 0.15s',
-}
-
-function btnStyle(disabled: boolean): React.CSSProperties {
-  return {
-    width: '100%',
-    padding: '13px 20px',
-    borderRadius: 10,
-    border: 'none',
-    background: disabled ? '#7B93AB' : 'var(--brand)',
-    color: '#fff',
-    fontWeight: 700,
-    fontSize: 15,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    transition: 'background 0.15s',
-  }
 }
