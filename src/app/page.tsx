@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import { NavBar } from '@/components/ui/NavBar'
 import { HowItWorks } from '@/components/ui/HowItWorks'
 import { FaqAccordion } from '@/components/ui/FaqAccordion'
 
@@ -52,46 +53,7 @@ export default async function LandingPage() {
       />
 
       {/* ── Nav ──────────────────────────────────────────────────────────── */}
-      <nav
-        className="sticky top-0 z-50"
-        style={{ background: 'transparent' }}
-      >
-        <div
-          style={{
-            maxWidth: 1160,
-            margin: '0 auto',
-            padding: '0 32px',
-            height: 68,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          {/* Logo pill — solid bg so it reads over the pattern/content */}
-          <a href="https://flent.in" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
-            <div
-              style={{
-                background: 'var(--bg)',
-                border: '1.5px solid var(--brand)',
-                borderRadius: 999,
-                padding: '7px 18px',
-                display: 'inline-flex',
-                alignItems: 'center',
-              }}
-            >
-              <img src="/logo.png" alt="flent" style={{ height: 22, display: 'block' }} />
-            </div>
-          </a>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link href="/login" className="btn-pastel-peach" style={{ padding: '7px 18px', fontSize: 13 }}>
-              Sign in
-            </Link>
-            <Link href="/signup" className="btn-pastel-violet" style={{ padding: '8px 20px', fontSize: 13 }}>
-              Join — it&apos;s free
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <NavBar />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section
@@ -136,29 +98,30 @@ export default async function LandingPage() {
           Open to everyone — tenants and non-tenants
         </div>
 
-        <h1
-          style={{
-            fontFamily: 'var(--font-sans), "Plus Jakarta Sans", sans-serif',
-            fontSize: 'clamp(54px, 8vw, 90px)',
-            fontWeight: 700,
-            lineHeight: 1.06,
-            color: 'var(--text)',
-            marginBottom: 4,
-          }}
-        >
-          Refer friends to Flent.
-        </h1>
-        <h1
-          className="serif-italic"
-          style={{
-            fontSize: 'clamp(54px, 8vw, 90px)',
-            fontWeight: 500,
-            lineHeight: 1.06,
-            color: 'var(--brand)',
-            marginBottom: 28,
-          }}
-        >
-          Earn real rewards.
+        <h1 style={{ marginBottom: 28, lineHeight: 1.06 }}>
+          <span
+            style={{
+              display: 'block',
+              fontFamily: 'var(--font-sans), "Plus Jakarta Sans", sans-serif',
+              fontSize: 'clamp(54px, 8vw, 90px)',
+              fontWeight: 700,
+              color: 'var(--text)',
+              marginBottom: 4,
+            }}
+          >
+            Refer friends to Flent.
+          </span>
+          <span
+            className="serif-italic"
+            style={{
+              display: 'block',
+              fontSize: 'clamp(54px, 8vw, 90px)',
+              fontWeight: 500,
+              color: 'var(--brand)',
+            }}
+          >
+            Earn real rewards.
+          </span>
         </h1>
 
         <p
@@ -242,10 +205,9 @@ export default async function LandingPage() {
         {/* Strip 1 — light, scrolls left, behind */}
         <div
           style={{
-            transform: 'rotate(-1deg)',
-            width: '120%',
-            marginLeft: '-10%',
-            marginRight: '-10%',
+            transform: 'rotate(-2.5deg)',
+            width: '150%',
+            marginLeft: '-25%',
             position: 'relative',
             zIndex: 1,
           }}
@@ -283,10 +245,9 @@ export default async function LandingPage() {
         {/* Strip 2 — brand navy, scrolls right, overlaps strip 1 */}
         <div
           style={{
-            transform: 'rotate(1deg)',
-            width: '120%',
-            marginLeft: '0%',
-            marginRight: '-10%',
+            transform: 'rotate(2.5deg)',
+            width: '150%',
+            marginLeft: '-25%',
             position: 'relative',
             zIndex: 2,
             marginTop: '-14px',
@@ -328,7 +289,7 @@ export default async function LandingPage() {
 
       {/* ── Reward roadmap ───────────────────────────────────────────────── */}
       {milestones.length > 0 && (
-        <section style={{ padding: '96px 32px' }}>
+        <section style={{ padding: 'clamp(64px, 8vw, 96px) clamp(20px, 4vw, 32px)' }}>
           <div style={{ maxWidth: 1000, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
               <div
@@ -431,7 +392,7 @@ export default async function LandingPage() {
           background: 'var(--surface)',
           borderTop: '1px solid var(--border)',
           borderBottom: '1px solid var(--border)',
-          padding: '96px 32px',
+          padding: 'clamp(64px, 8vw, 96px) clamp(20px, 4vw, 32px)',
         }}
       >
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -510,7 +471,7 @@ export default async function LandingPage() {
                 <h3 style={{ fontWeight: 700, fontSize: 15, color: '#15102E', marginBottom: 8, lineHeight: 1.3 }}>
                   {item.title}
                 </h3>
-                <p style={{ color: 'rgba(21,16,46,0.68)', fontSize: 13, lineHeight: 1.7 }}>{item.desc}</p>
+                <p style={{ color: 'rgba(21,16,46,0.68)', fontSize: 14, lineHeight: 1.7 }}>{item.desc}</p>
               </div>
             ))}
           </div>
@@ -518,7 +479,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Social proof ──────────────────────────────────────────────────── */}
-      <section style={{ padding: '96px 32px', background: 'var(--bg)' }}>
+      <section style={{ padding: 'clamp(64px, 8vw, 96px) clamp(20px, 4vw, 32px)', background: 'var(--bg)' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <div
@@ -562,7 +523,7 @@ export default async function LandingPage() {
                 label: 'Happy tenants living in Flent homes across Bangalore',
               },
               {
-                color: '#7f5639',
+                color: '#7B4426',
                 textColor: '#fff',
                 stat: '200+',
                 label: 'Items in every home — so your friend walks in ready to live',
@@ -574,8 +535,8 @@ export default async function LandingPage() {
                   background: item.color,
                   borderRadius: 24,
                   padding: '44px 36px',
-                  border: '2px solid #15102E',
-                  boxShadow: '6px 6px 0 #15102E',
+                  border: '2px solid var(--brand)',
+                  boxShadow: '4px 4px 0 var(--brand)',
                 }}
               >
                 <div
@@ -610,7 +571,7 @@ export default async function LandingPage() {
       <FaqAccordion />
 
       {/* ── CTA banner — full width, brand bg, zig-zag pattern ──────────── */}
-      <section style={{ position: 'relative', background: '#7B4426', padding: '96px 32px', overflow: 'hidden' }}>
+      <section style={{ position: 'relative', background: '#7B4426', padding: 'clamp(64px, 8vw, 96px) clamp(20px, 4vw, 32px)', overflow: 'hidden' }}>
         {/* Ghostly zig-zag pattern */}
         <div
           aria-hidden="true"
@@ -654,20 +615,7 @@ export default async function LandingPage() {
             Free to join. Takes under a minute. Your code is waiting.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-            <Link
-              href="/signup"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                background: '#fff',
-                color: 'var(--brand)',
-                padding: '16px 44px',
-                borderRadius: 999,
-                fontWeight: 700,
-                fontSize: 15,
-                textDecoration: 'none',
-              }}
-            >
+            <Link href="/signup" className="btn-pill-white">
               Get my referral code — it&apos;s free
             </Link>
             <Link href="/login" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
@@ -678,10 +626,10 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <footer style={{ borderTop: '1px solid var(--border)', padding: '28px 48px' }}>
+      <footer style={{ borderTop: '1px solid var(--border)', padding: '28px 32px' }}>
         <div
           style={{
-            maxWidth: 1160,
+            maxWidth: 1000,
             margin: '0 auto',
             display: 'flex',
             alignItems: 'center',
@@ -722,8 +670,8 @@ export default async function LandingPage() {
 
 function iconBaseProps() {
   return {
-    width: 22,
-    height: 22,
+    width: 26,
+    height: 26,
     viewBox: '0 0 24 24',
     fill: 'none' as const,
     'aria-hidden': true as const,

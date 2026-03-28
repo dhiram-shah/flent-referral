@@ -32,6 +32,13 @@ export function HowItWorks() {
   const stepRefs = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {
+    // Respect prefers-reduced-motion — skip all animation for users who've opted out
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      stepRefs.current.forEach((el) => { if (el) el.classList.add('step-visible') })
+      if (tapeBodyRef.current) tapeBodyRef.current.style.transform = 'scaleY(1)'
+      return
+    }
+
     // IntersectionObserver for reliable step reveal
     const observers: IntersectionObserver[] = []
     stepRefs.current.forEach((el) => {

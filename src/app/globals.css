@@ -260,6 +260,32 @@ body {
     transform: none;
     box-shadow: 3px 3px 0 var(--brand);
   }
+
+  /* White CTA pill — for use on dark/colored backgrounds */
+  .btn-pill-white {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    color: var(--brand);
+    padding: 16px 44px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 15px;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .btn-pill-white:hover {
+    background: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  }
+  .btn-pill-white:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
 }
 
 /*
@@ -290,7 +316,11 @@ body {
 .timeline-step {
   opacity: 0;
   transform: translateY(28px);
-  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .timeline-step {
+    transition: opacity 0.55s ease, transform 0.55s ease;
+  }
 }
 .timeline-step.step-visible {
   opacity: 1;
