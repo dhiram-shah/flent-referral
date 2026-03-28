@@ -43,7 +43,7 @@ interface DashboardData {
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   INTERESTED: { label: 'Interested', color: '#D97706', bg: '#FEF3C7' },
   AGREEMENT_SIGNED: { label: 'Agreement Signed', color: '#2563EB', bg: '#DBEAFE' },
-  COMPLETED: { label: 'Completed ✓', color: '#059669', bg: '#D1FAE5' },
+  COMPLETED: { label: 'Completed', color: '#059669', bg: '#D1FAE5' },
 }
 
 export default function DashboardPage() {
@@ -115,12 +115,11 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 40, height: 40, border: '3px solid var(--brand-light)', borderTopColor: 'var(--brand)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
           <p style={{ color: 'var(--muted)', fontSize: 14 }}>Loading your dashboard…</p>
         </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
@@ -134,99 +133,142 @@ export default function DashboardPage() {
 
   return (
     <main style={{ background: 'var(--bg)', minHeight: '100vh' }}>
-      {/* ── Nav ─────────────────────────────────────────────────────────────── */}
-      <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 50 }}>
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/"><img src="/logo.png" alt="flent" style={{ height: 22, display: 'block' }} /></Link>
-          <div className="flex items-center gap-4">
-            <span style={{ fontSize: 14, color: 'var(--muted)' }} className="hidden sm:block">Hi, {referrer.name.split(' ')[0]} 👋</span>
-            <button onClick={handleLogout} style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Sign out</button>
-          </div>
-        </div>
-      </nav>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* ── Top cards ────────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Referral code card */}
-          <div
-            style={{
-              background: 'var(--brand)',
-              backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M14 8l1.5 4.5L20 14l-4.5 1.5L14 20l-1.5-4.5L8 14l4.5-1.5z' fill='%23FFFFFF' fill-opacity='0.06'/%3E%3C/svg%3E\")",
-              borderRadius: 20,
-              padding: 24,
-              color: '#fff',
-            }}
-            className="md:col-span-2"
-          >
-            <p style={{ fontSize: 11, opacity: 0.65, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Your Referral Code</p>
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="serif" style={{ fontSize: 'clamp(20px, 4vw, 32px)', fontWeight: 700, letterSpacing: 3 }}>{referrer.referralCode}</span>
-              <div className="flex gap-2 flex-wrap">
-                <button onClick={copyCode} style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', padding: '8px 18px', borderRadius: 999, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
-                  {copied ? '✓ Copied!' : 'Copy'}
-                </button>
-                <button onClick={shareWhatsApp} style={{ background: '#25D366', border: 'none', color: '#fff', padding: '8px 18px', borderRadius: 999, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
-                  Share on WhatsApp
-                </button>
+      {/* ── Header — mirrors homepage hero aesthetic ─────────────────────────── */}
+      <div style={{ position: 'relative', background: 'var(--bg)', borderBottom: '1px solid var(--border)', overflow: 'hidden' }}>
+
+        {/* Geometric pattern — same as landing page */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundImage: "url('/patterns/pie-factory.svg')",
+            backgroundSize: '60px 60px',
+            backgroundRepeat: 'repeat',
+            WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 100%)',
+            maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 100%)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Nav */}
+        <nav style={{ position: 'relative', zIndex: 10 }}>
+          <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 24px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+              <div style={{ background: 'var(--bg)', border: '1.5px solid var(--brand)', borderRadius: 999, padding: '7px 18px', display: 'inline-flex', alignItems: 'center' }}>
+                <img src="/logo.png" alt="flent" style={{ height: 22, display: 'block' }} />
               </div>
+            </Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <span style={{ fontSize: 14, color: 'var(--muted)' }}>
+                Hi, {referrer.name.split(' ')[0]}
+              </span>
+              <button
+                onClick={handleLogout}
+                style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                Sign out
+              </button>
             </div>
-            <p style={{ fontSize: 12, opacity: 0.55, marginTop: 12 }}>Friends enter this code when enquiring on Flent</p>
+          </div>
+        </nav>
+
+        {/* Hero content */}
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 700, margin: '0 auto', padding: 'clamp(40px, 6vw, 72px) 24px clamp(48px, 7vw, 80px)', textAlign: 'center' }}>
+
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--brand-light)', color: 'var(--brand)', padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, marginBottom: 28 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', flexShrink: 0 }} />
+            Your referral code
           </div>
 
-          {/* Stats card */}
-          <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 24, border: '1px solid var(--border)' }}>
-            <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Current streak</p>
-              <p style={{ fontSize: 36, fontWeight: 800, color: 'var(--brand)' }}>{streak}</p>
-            </div>
-            <div>
-              <p style={{ fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Lifetime referrals</p>
-              <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{progress.lifetimeCount}</p>
-            </div>
+          <div style={{ marginBottom: 20 }}>
+            <p style={{ fontFamily: 'var(--font-sans), "Plus Jakarta Sans", sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--muted)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 }}>
+              Share with friends moving to Bangalore
+            </p>
+            <p
+              className="serif-italic"
+              style={{
+                fontSize: 'clamp(56px, 12vw, 96px)',
+                fontWeight: 500,
+                color: 'var(--brand)',
+                letterSpacing: 6,
+                lineHeight: 1,
+              }}
+            >
+              {referrer.referralCode}
+            </p>
+          </div>
+
+          <p style={{ color: 'var(--muted)', fontSize: 15, marginBottom: 32, lineHeight: 1.6, maxWidth: 420, margin: '0 auto 32px' }}>
+            Friends enter this code when they enquire on Flent — you earn a reward when they move in.
+          </p>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <button onClick={copyCode} className="btn-pastel-violet">
+              {copied ? '✓ Copied!' : 'Copy code'}
+            </button>
+            <button onClick={shareWhatsApp} className="btn-pastel-peach">
+              Share on WhatsApp
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* ── Milestone Roadmap ─────────────────────────────────────────────── */}
-        <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 24, border: '1px solid var(--border)', marginBottom: 20 }}>
-          <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
+      {/* ── Stats strip ─────────────────────────────────────────────────────── */}
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+          <div style={{ padding: '24px 20px', borderRight: '1px solid var(--border)', textAlign: 'center' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Current streak</p>
+            <p className="serif" style={{ fontSize: 52, fontWeight: 700, color: 'var(--brand)', lineHeight: 1 }}>{streak}</p>
+          </div>
+          <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Lifetime referrals</p>
+            <p className="serif" style={{ fontSize: 52, fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>{progress.lifetimeCount}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Content ─────────────────────────────────────────────────────────── */}
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: 'clamp(24px, 4vw, 40px) 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* Milestone Roadmap */}
+        <div style={{ background: 'var(--surface)', borderRadius: 20, padding: 24, border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
             <div>
-              <h2 style={{ fontWeight: 700, fontSize: 18, marginBottom: 2 }}>Reward Roadmap</h2>
+              <h2 style={{ fontWeight: 700, fontSize: 17, marginBottom: 4 }}>Reward Roadmap</h2>
               {next ? (
                 <p style={{ color: 'var(--muted)', fontSize: 13 }}>
                   {next.referralsRequired - streak} more referral{next.referralsRequired - streak !== 1 ? 's' : ''} to unlock <strong>{next.rewardName}</strong>
                 </p>
               ) : (
-                <p style={{ color: 'var(--success)', fontSize: 13, fontWeight: 600 }}>🎉 All milestones cleared! Claim your reward below.</p>
+                <p style={{ color: 'var(--success)', fontSize: 13, fontWeight: 600 }}>All milestones cleared — claim your reward below.</p>
               )}
             </div>
             {progress.canRedeem && (
-              <button onClick={() => setShowRedeemModal(true)} className="btn-pill animate-pulse-ring" style={{ fontSize: 14, padding: '10px 24px' }}>
-                🎁 Claim Reward
+              <button onClick={() => setShowRedeemModal(true)} className="btn-pastel-violet animate-pulse-ring" style={{ fontSize: 14, padding: '10px 24px' }}>
+                Claim reward
               </button>
             )}
             {progress.hasPendingRedemption && (
               <div style={{ background: '#FEF3C7', color: '#D97706', padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
-                ⏳ Reward pending fulfilment
+                Reward pending fulfilment
               </div>
             )}
           </div>
 
-          {/* Progress bar */}
           {next && (
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>
                 <span>{streak} referrals</span>
                 <span>{next.referralsRequired} needed</span>
               </div>
-              <div style={{ background: 'var(--bg)', borderRadius: 99, height: 10, overflow: 'hidden' }}>
-                <div style={{ background: 'linear-gradient(90deg, var(--brand), #2A4A6B)', height: '100%', width: `${progressPct}%`, borderRadius: 99, transition: 'width 0.6s ease' }} />
+              <div style={{ background: 'var(--bg)', borderRadius: 99, height: 8, overflow: 'hidden' }}>
+                <div style={{ background: 'var(--brand)', height: '100%', width: `${progressPct}%`, borderRadius: 99, transition: 'width 0.6s ease' }} />
               </div>
             </div>
           )}
 
-          {/* Milestone tiles */}
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
             {milestones.map((m) => {
               const isUnlocked = streak >= m.referralsRequired
               const isCurrent = next?.id === m.id
@@ -235,30 +277,31 @@ export default function DashboardPage() {
                   key={m.id}
                   style={{
                     minWidth: 120,
-                    background: isUnlocked ? 'linear-gradient(135deg, #18293D18, #2A4A6B18)' : 'var(--bg)',
-                    border: isCurrent ? '2px solid var(--brand)' : isUnlocked ? '2px solid var(--success)' : '1px solid var(--border)',
+                    background: isUnlocked ? 'var(--brand-light)' : 'var(--bg)',
+                    border: (isUnlocked || isCurrent) ? '2px solid var(--brand)' : '1px solid var(--border)',
+                    boxShadow: (isUnlocked || isCurrent) ? '2px 2px 0 var(--brand)' : 'none',
                     borderRadius: 14,
                     padding: '14px 12px',
                     textAlign: 'center',
                     flexShrink: 0,
-                    opacity: isUnlocked ? 1 : 0.6,
+                    opacity: (!isUnlocked && !isCurrent) ? 0.5 : 1,
                   }}
                 >
-                  <div style={{ fontSize: 22, marginBottom: 4 }}>{isUnlocked ? '✅' : '🔒'}</div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
                     {m.referralsRequired} ref.
                   </div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>{m.rewardName}</div>
-                  {isCurrent && <div style={{ fontSize: 10, color: 'var(--brand)', marginTop: 4, fontWeight: 600 }}>← Next</div>}
+                  {isUnlocked && !isCurrent && <div style={{ fontSize: 10, color: 'var(--success)', marginTop: 6, fontWeight: 700 }}>Unlocked</div>}
+                  {isCurrent && <div style={{ fontSize: 10, color: 'var(--brand)', marginTop: 6, fontWeight: 700 }}>Next up</div>}
                 </div>
               )
             })}
           </div>
         </div>
 
-        {/* ── Referrals List ────────────────────────────────────────────────── */}
-        <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 24, border: '1px solid var(--border)' }}>
-          <h2 style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>Your Referrals</h2>
+        {/* Referrals List */}
+        <div style={{ background: 'var(--surface)', borderRadius: 20, padding: 24, border: '1px solid var(--border)' }}>
+          <h2 style={{ fontWeight: 700, fontSize: 17, marginBottom: 4 }}>Your Referrals</h2>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 20 }}>
             {referrals.length === 0
               ? 'No referrals yet — share your code to get started!'
@@ -267,11 +310,10 @@ export default function DashboardPage() {
 
           {referrals.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 16px' }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>📤</div>
-              <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 16 }}>
+              <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 20 }}>
                 Share your code with friends looking for quality co-living in Bangalore.
               </p>
-              <button onClick={shareWhatsApp} style={{ background: '#25D366', border: 'none', color: '#fff', padding: '12px 24px', borderRadius: 999, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+              <button onClick={shareWhatsApp} className="btn-pastel-peach">
                 Share on WhatsApp
               </button>
             </div>
@@ -280,7 +322,10 @@ export default function DashboardPage() {
               {referrals.map((r) => {
                 const s = STATUS_LABELS[r.status] ?? STATUS_LABELS.INTERESTED
                 return (
-                  <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)', flexWrap: 'wrap', gap: 8 }}>
+                  <div
+                    key={r.id}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)', flexWrap: 'wrap', gap: 8 }}
+                  >
                     <div>
                       <p style={{ fontWeight: 600, fontSize: 14 }}>{r.refereeName}</p>
                       <p style={{ fontSize: 12, color: 'var(--muted)' }}>
@@ -302,9 +347,8 @@ export default function DashboardPage() {
           <div style={{ background: 'var(--surface)', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
             {redeemSuccess ? (
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 52, marginBottom: 12 }}>🎉</div>
-                <h2 style={{ fontWeight: 700, fontSize: 20 }}>Reward claimed!</h2>
-                <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 8 }}>We&apos;ll fulfil your reward within 7 days. Your streak resets — time for round 2! 🎮</p>
+                <h2 style={{ fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Reward claimed!</h2>
+                <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 8 }}>We&apos;ll fulfil your reward within 7 days. Your streak resets — time for round 2!</p>
               </div>
             ) : (
               <>
@@ -315,14 +359,20 @@ export default function DashboardPage() {
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
                       {progress.unlockedMilestone.extraInfoLabel ?? 'Additional Information'}
                     </label>
-                    <textarea value={redeemExtra} onChange={(e) => setRedeemExtra(e.target.value)} rows={3} placeholder="e.g., delivery address" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', fontSize: 14, resize: 'vertical' }} />
+                    <textarea
+                      value={redeemExtra}
+                      onChange={(e) => setRedeemExtra(e.target.value)}
+                      rows={3}
+                      placeholder="e.g., delivery address"
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', fontSize: 14, resize: 'vertical' }}
+                    />
                   </div>
                 )}
                 {error && <div style={{ background: '#FEF2F2', color: 'var(--danger)', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>{error}</div>}
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button onClick={() => setShowRedeemModal(false)} className="btn-pill-outline" style={{ flex: 1, padding: '12px' }}>Cancel</button>
                   <button onClick={handleRedeem} disabled={redeemLoading} className="btn-pill" style={{ flex: 2, padding: '12px' }}>
-                    {redeemLoading ? 'Claiming…' : 'Yes, claim this reward 🎁'}
+                    {redeemLoading ? 'Claiming…' : 'Claim this reward'}
                   </button>
                 </div>
               </>
