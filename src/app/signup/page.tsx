@@ -77,9 +77,9 @@ export default function SignupPage() {
       <div style={{ width: '100%', maxWidth: 440 }}>
         {/* Logo */}
         <div className="text-center mb-8">
-          <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
             <img src="/logo.png" alt="flent" style={{ height: 26, display: 'block', margin: '0 auto' }} />
-          </a>
+          </Link>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 6 }}>Referral Program</p>
         </div>
 
@@ -143,7 +143,7 @@ export default function SignupPage() {
                   />
                 </Field>
                 {error && <ErrorMsg>{error}</ErrorMsg>}
-                <button type="submit" disabled={loading} className="btn-pill" style={{ width: '100%', marginTop: 4 }}>
+                <button type="submit" disabled={loading} className="btn-pastel-violet" style={{ width: '100%', marginTop: 4 }}>
                   {loading ? 'Sending OTP…' : 'Get my referral code →'}
                 </button>
               </form>
@@ -160,7 +160,9 @@ export default function SignupPage() {
           {step === 'otp' && (
             <>
               <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                <div style={{ fontSize: 44, marginBottom: 12 }}>📧</div>
+                <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+                  <MailIcon />
+                </div>
                 <h1 className="serif" style={{ fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
                   Check your email
                 </h1>
@@ -196,7 +198,7 @@ export default function SignupPage() {
                 <button
                   type="submit"
                   disabled={loading || otp.length < 6}
-                  className="btn-pill"
+                  className="btn-pastel-violet"
                   style={{ width: '100%' }}
                 >
                   {loading ? 'Verifying…' : 'Verify & get my code'}
@@ -204,7 +206,8 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setStep('form')}
-                  style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 13, cursor: 'pointer' }}
+                  className="btn-pastel-peach"
+                  style={{ width: '100%', padding: '12px 20px', fontSize: 13 }}
                 >
                   ← Back
                 </button>
@@ -213,17 +216,10 @@ export default function SignupPage() {
                 Didn&apos;t receive it? Check spam or{' '}
                 <button
                   onClick={handleSignup as unknown as React.MouseEventHandler<HTMLButtonElement>}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--brand)',
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    padding: 0,
-                    fontWeight: 600,
-                  }}
+                  className="btn-pastel-peach"
+                  style={{ padding: '5px 12px', fontSize: 12 }}
                 >
-                  resend
+                  Resend
                 </button>
                 .
               </p>
@@ -233,7 +229,9 @@ export default function SignupPage() {
           {/* ── Step: Success ─────────────────────────────────────────────── */}
           {step === 'success' && (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 52, marginBottom: 12 }}>🎉</div>
+              <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'center' }}>
+                <SealIcon />
+              </div>
               <h1 className="serif" style={{ fontWeight: 800, fontSize: 24, marginBottom: 8 }}>
                 You&apos;re in!
               </h1>
@@ -243,8 +241,6 @@ export default function SignupPage() {
               <div
                 style={{
                   background: 'var(--brand)',
-                  backgroundImage:
-                    "url(\"data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M14 8l1.5 4.5L20 14l-4.5 1.5L14 20l-1.5-4.5L8 14l4.5-1.5z' fill='%23FFFFFF' fill-opacity='0.07'/%3E%3C/svg%3E\")",
                   borderRadius: 18,
                   padding: '24px 20px',
                   marginBottom: 20,
@@ -266,13 +262,13 @@ export default function SignupPage() {
                 </p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <button onClick={copyCode} className="btn-pill" style={{ width: '100%' }}>
+                <button onClick={copyCode} className="btn-pastel-violet" style={{ width: '100%' }}>
                   {copied ? '✓ Copied!' : 'Copy code'}
                 </button>
                 {/* Full-page navigation ensures proxy.ts reads the fresh cookie */}
                 <a
                   href="/dashboard"
-                  className="btn-pill-outline"
+                  className="btn-pastel-peach"
                   style={{ width: '100%', justifyContent: 'center' }}
                 >
                   Go to my dashboard →
@@ -346,4 +342,43 @@ const inputStyle: React.CSSProperties = {
   background: 'var(--bg)',
   color: 'var(--text)',
   transition: 'border-color 0.15s',
+}
+
+function MailIcon() {
+  return (
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4.5 7.5C4.5 6.67157 5.17157 6 6 6H18C18.8284 6 19.5 6.67157 19.5 7.5V16.5C19.5 17.3284 18.8284 18 18 18H6C5.17157 18 4.5 17.3284 4.5 16.5V7.5Z"
+        stroke="var(--brand)"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 8L12 12.5L18 8"
+        stroke="var(--brand)"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function SealIcon() {
+  return (
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3.5L14.2 5.1L16.9 4.6L17.4 7.3L19.6 9L18 11.2L18.6 13.9L15.9 14.4L14.2 16.6L12 15L9.8 16.6L8.1 14.4L5.4 13.9L6 11.2L4.4 9L6.6 7.3L7.1 4.6L9.8 5.1L12 3.5Z"
+        stroke="var(--brand)"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.5 20.5V16.6M14.5 20.5V16.6"
+        stroke="var(--brand)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
 }

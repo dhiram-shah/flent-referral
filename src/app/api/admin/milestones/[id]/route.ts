@@ -4,16 +4,14 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { verifyAdminToken, COOKIE_NAMES } from '@/lib/auth'
 
-async function requireAdmin() {
+async function getAdminPayload() {
   const cookieStore = await cookies()
   const token = cookieStore.get(COOKIE_NAMES.ADMIN)?.value
   if (!token) return null
-  const p = verifyAdminToken(token)
-  if (!p || p.role !== 'ADMIN') return null
-  return p
+  return verifyAdminToken(token)
 }
 
-const updateSchema = z.object({
+const patchSchema = z.object({
   tierNumber: z.number().int().positive().optional(),
   referralsRequired: z.number().int().positive().optional(),
   rewardName: z.string().min(1).optional(),
@@ -26,13 +24,14 @@ const updateSchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!(await requireAdmin())) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  const payload = await getAdminPayload()
+  if (!payload) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
   const body = await request.json().catch(() => null)
-  const parsed = updateSchema.safeParse(body)
+  const parsed = patchSchema.safeParse(body)
   if (!parsed.success) return Response.json({ error: 'Invalid input' }, { status: 400 })
 
   const milestone = await prisma.milestoneConfig.update({
@@ -43,10 +42,11 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!(await requireAdmin())) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  const payload = await getAdminPayload()
+  if (!payload) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
   await prisma.milestoneConfig.delete({ where: { id } })

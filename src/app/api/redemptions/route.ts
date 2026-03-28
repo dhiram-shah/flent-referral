@@ -59,9 +59,15 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const redemption = await prisma.redemption.create({
-    data: { referrerId, milestoneId, extraInfo: extraInfo ?? {}, status: 'PENDING' },
-  })
+  const [redemption] = await prisma.$transaction([
+    prisma.redemption.create({
+      data: { referrerId, milestoneId, extraInfo: extraInfo ?? {}, status: 'PENDING' },
+    }),
+    prisma.referrerProgress.update({
+      where: { referrerId },
+      data: { currentStreakCount: 0, lastResetAt: new Date() },
+    }),
+  ])
 
   // Notify referrer (async, non-blocking)
   notifyRedemptionConfirmed(referrer, milestone.rewardName).catch(console.error)

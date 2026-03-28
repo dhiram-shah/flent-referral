@@ -4,20 +4,11 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { verifyAdminToken, COOKIE_NAMES } from '@/lib/auth'
 
-async function requireAdmin() {
+async function getAdminPayload() {
   const cookieStore = await cookies()
   const token = cookieStore.get(COOKIE_NAMES.ADMIN)?.value
   if (!token) return null
   return verifyAdminToken(token)
-}
-
-export async function GET() {
-  if (!(await requireAdmin())) return Response.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const milestones = await prisma.milestoneConfig.findMany({
-    orderBy: { tierNumber: 'asc' },
-  })
-  return Response.json({ milestones })
 }
 
 const createSchema = z.object({
@@ -31,17 +22,23 @@ const createSchema = z.object({
   isActive: z.boolean().default(true),
 })
 
+export async function GET() {
+  const payload = await getAdminPayload()
+  if (!payload) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const milestones = await prisma.milestoneConfig.findMany({
+    orderBy: { tierNumber: 'asc' },
+  })
+  return Response.json({ milestones })
+}
+
 export async function POST(request: NextRequest) {
-  const admin = await requireAdmin()
-  if (!admin || admin.role !== 'ADMIN') {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const payload = await getAdminPayload()
+  if (!payload) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json().catch(() => null)
   const parsed = createSchema.safeParse(body)
-  if (!parsed.success) {
-    return Response.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
-  }
+  if (!parsed.success) return Response.json({ error: 'Invalid input' }, { status: 400 })
 
   const milestone = await prisma.milestoneConfig.create({ data: parsed.data })
   return Response.json({ milestone }, { status: 201 })

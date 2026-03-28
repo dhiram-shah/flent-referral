@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --brand: #18293D;
-  --brand-dark: #0D1825;
-  --brand-light: #E6ECF2;
+  --brand: #15102E;
+  --brand-dark: #0A0820;
+  --brand-light: #ECEAF5;
   --success: #10B981;
   --warning: #F59E0B;
   --danger: #EF4444;
-  --bg: #F3EDE3;
-  --surface: #FDFAF6;
-  --text: #1A1A2E;
-  --muted: #7A6E63;
-  --border: #E2D9CC;
+  --bg: #FCFBF7;
+  --surface: #FFFFFF;
+  --text: #15102E;
+  --muted: #737373;
+  --border: #E5E5E5;
 }
 
 @theme inline {
@@ -34,10 +34,8 @@
 
 body {
   background-color: var(--bg);
-  /* Subtle 4-pointed star texture matching flent.in */
-  background-image: url("data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M14 8l1.5 4.5L20 14l-4.5 1.5L14 20l-1.5-4.5L8 14l4.5-1.5z' fill='%23A08870' fill-opacity='0.15'/%3E%3C/svg%3E");
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -50,83 +48,229 @@ body {
   font-style: italic;
 }
 
-/* ── Pill buttons — flent.in style ──────────────────────────────────────── */
-.btn-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 13px 32px;
-  border-radius: 999px;
-  border: none;
-  background: var(--brand);
-  color: #fff;
-  font-weight: 600;
-  font-size: 15px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 0.15s, transform 0.1s;
-  white-space: nowrap;
+/* ── Responsive layout helpers ──────────────────────────────────────────── */
+.trust-strip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background-color: var(--border);
 }
-.btn-pill:hover {
-  background: var(--brand-dark);
-  transform: translateY(-1px);
-}
-.btn-pill:active {
-  transform: translateY(0);
-}
-.btn-pill:disabled,
-.btn-pill[disabled] {
-  background: #A8B8C8;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn-pill-outline {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px 32px;
-  border-radius: 999px;
-  border: 1.5px solid var(--brand);
-  background: transparent;
-  color: var(--brand);
-  font-weight: 600;
-  font-size: 15px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 0.15s, transform 0.1s;
-  white-space: nowrap;
-}
-.btn-pill-outline:hover {
-  background: var(--brand-light);
-  transform: translateY(-1px);
-}
-
-.btn-pill-sm {
-  padding: 9px 20px;
-  font-size: 13px;
-  border-radius: 999px;
-  border: none;
-  background: var(--brand);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 0.15s;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-}
-.btn-pill-sm:hover { background: var(--brand-dark); }
-
-/* Card with warm surface */
-.card {
+.trust-strip-grid > div {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
+}
+@media (min-width: 640px) {
+  .trust-strip-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.friends-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (min-width: 900px) {
+  .friends-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+}
+
+/* Hide/show tape column on mobile */
+.timeline-tape-col {
+  display: none;
+}
+@media (min-width: 640px) {
+  .timeline-tape-col {
+    display: block;
+    flex-shrink: 0;
+    width: 36px;
+    position: relative;
+    align-self: stretch;
+  }
+}
+
+.timeline-steps-wrapper {
+  display: flex;
+  gap: 0;
+  align-items: flex-start;
+}
+@media (min-width: 640px) {
+  .timeline-steps-wrapper {
+    gap: 52px;
+  }
+}
+
+/* ── Pill buttons — flent.in style ──────────────────────────────────────── */
+@layer components {
+  .btn-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 13px 32px;
+    border-radius: 999px;
+    border: none;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+    line-height: 1;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .btn-pill:hover {
+    background: var(--brand-dark);
+    transform: translateY(-1px);
+  }
+  .btn-pill:active {
+    transform: translateY(0);
+  }
+  .btn-pill:disabled,
+  .btn-pill[disabled] {
+    background: #A8B8C8;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-pill-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 32px;
+    border-radius: 999px;
+    border: 1.5px solid var(--brand);
+    background: transparent;
+    color: var(--brand);
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .btn-pill-outline:hover {
+    background: var(--brand-light);
+    transform: translateY(-1px);
+  }
+
+  .btn-pill-sm {
+    padding: 9px 20px;
+    font-size: 13px;
+    border-radius: 999px;
+    border: none;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .btn-pill-sm:hover { background: var(--brand-dark); }
+
+  /* Card with warm surface */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+  }
+
+  /* ── Pastel pill buttons — flent.in nav style ─────────────────────────── */
+  .btn-pastel-violet {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 26px;
+    border-radius: 999px;
+    border: 1.5px solid var(--brand);
+    background: #dad7f4;
+    color: var(--brand);
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.1s, box-shadow 0.1s;
+    box-shadow: 3px 3px 0 var(--brand);
+    white-space: nowrap;
+    line-height: 1;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .btn-pastel-violet:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--brand);
+  }
+  .btn-pastel-violet:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--brand);
+  }
+  .btn-pastel-violet:disabled,
+  .btn-pastel-violet[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 3px 3px 0 var(--brand);
+  }
+
+  .btn-pastel-peach {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 26px;
+    border-radius: 999px;
+    border: 1.5px solid var(--brand);
+    background: #ffe2d8;
+    color: var(--brand);
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.1s, box-shadow 0.1s;
+    box-shadow: 3px 3px 0 var(--brand);
+    white-space: nowrap;
+    line-height: 1;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .btn-pastel-peach:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--brand);
+  }
+  .btn-pastel-peach:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--brand);
+  }
+  .btn-pastel-peach:disabled,
+  .btn-pastel-peach[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 3px 3px 0 var(--brand);
+  }
+}
+
+/* ── Scroll timeline animation ──────────────────────────────────────────── */
+.timeline-step {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.timeline-step.step-visible {
+  opacity: 1;
+  transform: none;
 }
 
 @keyframes pulse-ring {

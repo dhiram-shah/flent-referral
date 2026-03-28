@@ -1,18 +1,15 @@
-import { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { verifyAdminToken, COOKIE_NAMES } from '@/lib/auth'
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const cookieStore = await cookies()
   const token = cookieStore.get(COOKIE_NAMES.ADMIN)?.value
-  if (!token || !verifyAdminToken(token)) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!token) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!verifyAdminToken(token)) return Response.json({ error: 'Invalid session' }, { status: 401 })
 
   const redemptions = await prisma.redemption.findMany({
-    orderBy: { requestedAt: 'desc' },
-    take: 50,
+    orderBy: [{ status: 'asc' }, { requestedAt: 'desc' }],
     include: {
       referrer: { select: { name: true, email: true, phone: true } },
       milestone: { select: { rewardName: true, tierNumber: true, requiresExtraInfo: true } },
