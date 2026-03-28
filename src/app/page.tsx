@@ -17,6 +17,14 @@ async function getMilestones() {
 }
 
 const REWARD_ICONS = ['🎁', '🛍️', '🎧', '✈️', '🏆']
+
+const FALLBACK_MILESTONES = [
+  { id: 'f1', tierNumber: 1, referralsRequired: 1, rewardName: 'Amazon Voucher', rewardDescription: '₹500 voucher — a small thank you for your first referral.' },
+  { id: 'f2', tierNumber: 2, referralsRequired: 3, rewardName: 'Swiggy / Zomato', rewardDescription: '₹1,000 food credit. Feed yourself and your next referral.' },
+  { id: 'f3', tierNumber: 3, referralsRequired: 5, rewardName: 'AirPods', rewardDescription: 'Apple AirPods — your daily companion, on us.' },
+  { id: 'f4', tierNumber: 4, referralsRequired: 8, rewardName: 'Flight Tickets', rewardDescription: 'Return flights anywhere in India. Weekend sorted.' },
+  { id: 'f5', tierNumber: 5, referralsRequired: 12, rewardName: 'iPhone', rewardDescription: 'Latest iPhone. The big one. You earned it.' },
+]
 const WIN_ITEMS = [
   { title: 'Vouchers', Icon: GiftOutlineIcon, sub: 'Everyday wins' },
   { title: 'Flight tickets', Icon: PlaneOutlineIcon, sub: 'Weekend getaways' },
@@ -288,7 +296,9 @@ export default async function LandingPage() {
       <HowItWorks />
 
       {/* ── Reward roadmap ───────────────────────────────────────────────── */}
-      {milestones.length > 0 && (
+      {(() => {
+        const displayMilestones = milestones.length > 0 ? milestones : FALLBACK_MILESTONES
+        return (
         <section style={{ padding: 'clamp(64px, 8vw, 96px) clamp(20px, 4vw, 32px)' }}>
           <div style={{ maxWidth: 1000, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
@@ -330,7 +340,7 @@ export default async function LandingPage() {
                 gap: 16,
               }}
             >
-              {milestones.map((m, i) => (
+              {displayMilestones.map((m, i) => (
                 <div
                   key={m.id}
                   style={{
@@ -384,7 +394,8 @@ export default async function LandingPage() {
             </div>
           </div>
         </section>
-      )}
+        )
+      })()}
 
       {/* ── Why your friends will love Flent ─────────────────────────────── */}
       <section
