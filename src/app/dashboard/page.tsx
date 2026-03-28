@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 
 interface Milestone {
   id: string
@@ -136,7 +137,7 @@ export default function DashboardPage() {
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
       <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 50 }}>
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="/"><img src="/logo.png" alt="flent" style={{ height: 22, display: 'block' }} /></a>
+          <Link href="/"><img src="/logo.png" alt="flent" style={{ height: 22, display: 'block' }} /></Link>
           <div className="flex items-center gap-4">
             <span style={{ fontSize: 14, color: 'var(--muted)' }} className="hidden sm:block">Hi, {referrer.name.split(' ')[0]} 👋</span>
             <button onClick={handleLogout} style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Sign out</button>

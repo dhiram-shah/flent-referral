@@ -24,12 +24,6 @@ interface Referrer {
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://flent.in/referral-program'
 const DASHBOARD_URL = `${APP_URL}/dashboard`
 
-async function log(referrerId: string, channel: string, event: string, status: string) {
-  await prisma.notificationLog
-    .create({ data: { referrerId, channel, event, status } })
-    .catch(console.error)
-}
-
 async function fire(
   referrerId: string,
   event: NotifEvent,
@@ -38,8 +32,24 @@ async function fire(
 ): Promise<void> {
   const [emailResult, waResult] = await Promise.allSettled([emailFn(), waFn()])
 
-  await log(referrerId, 'EMAIL', event, emailResult.status === 'fulfilled' ? 'SENT' : 'FAILED')
-  await log(referrerId, 'WHATSAPP', event, waResult.status === 'fulfilled' ? 'SENT' : 'FAILED')
+  await prisma.notificationLog
+    .createMany({
+      data: [
+        {
+          referrerId,
+          channel: 'EMAIL',
+          event,
+          status: emailResult.status === 'fulfilled' ? 'SENT' : 'FAILED',
+        },
+        {
+          referrerId,
+          channel: 'WHATSAPP',
+          event,
+          status: waResult.status === 'fulfilled' ? 'SENT' : 'FAILED',
+        },
+      ],
+    })
+    .catch(console.error)
 
   if (emailResult.status === 'rejected') {
     console.error(`[Notify] Email ${event} failed:`, emailResult.reason)

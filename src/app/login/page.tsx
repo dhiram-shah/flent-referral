@@ -63,9 +63,9 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: 420 }}>
         {/* Logo */}
         <div className="text-center mb-8">
-          <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
             <img src="/logo.png" alt="flent" style={{ height: 26, display: 'block', margin: '0 auto' }} />
-          </a>
+          </Link>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 6 }}>Referral Program</p>
         </div>
 
@@ -117,7 +117,7 @@ export default function LoginPage() {
                     )}
                   </div>
                 )}
-                <button type="submit" disabled={loading} className="btn-pill" style={{ width: '100%', marginTop: 4 }}>
+                <button type="submit" disabled={loading} className="btn-pastel-violet" style={{ width: '100%', marginTop: 4 }}>
                   {loading ? 'Sending code…' : 'Send sign-in code →'}
                 </button>
               </form>
@@ -134,7 +134,9 @@ export default function LoginPage() {
           {step === 'otp' && (
             <>
               <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                <div style={{ fontSize: 44, marginBottom: 12 }}>📧</div>
+                <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+                  <MailIcon />
+                </div>
                 <h1 className="serif" style={{ fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
                   Check your email
                 </h1>
@@ -167,7 +169,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading || otp.length < 6}
-                  className="btn-pill"
+                  className="btn-pastel-violet"
                   style={{ width: '100%' }}
                 >
                   {loading ? 'Signing in…' : 'Sign in →'}
@@ -175,7 +177,8 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { setStep('email'); setOtp(''); setError('') }}
-                  style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 13, cursor: 'pointer' }}
+                  className="btn-pastel-peach"
+                  style={{ width: '100%', padding: '10px 20px', fontSize: 13 }}
                 >
                   ← Use a different email
                 </button>
@@ -184,9 +187,10 @@ export default function LoginPage() {
                 Didn&apos;t receive it? Check spam or{' '}
                 <button
                   onClick={handleRequestOtp as unknown as React.MouseEventHandler<HTMLButtonElement>}
-                  style={{ background: 'none', border: 'none', color: 'var(--brand)', cursor: 'pointer', fontSize: 13, padding: 0, fontWeight: 600 }}
+                  className="btn-pastel-peach"
+                  style={{ padding: '7px 14px', fontSize: 12, boxShadow: '2px 2px 0 var(--brand)' }}
                 >
-                  resend
+                  Resend
                 </button>
                 .
               </p>
@@ -224,4 +228,24 @@ const errorStyle: React.CSSProperties = {
   padding: '10px 14px',
   fontSize: 13,
   color: 'var(--danger)',
+}
+
+function MailIcon() {
+  return (
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4.5 7.5C4.5 6.67157 5.17157 6 6 6H18C18.8284 6 19.5 6.67157 19.5 7.5V16.5C19.5 17.3284 18.8284 18 18 18H6C5.17157 18 4.5 17.3284 4.5 16.5V7.5Z"
+        stroke="var(--brand)"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 8L12 12.5L18 8"
+        stroke="var(--brand)"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
 }

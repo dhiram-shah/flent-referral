@@ -37,7 +37,7 @@ export async function GET(_req: NextRequest) {
   ])
 
   const statusCounts = Object.fromEntries(
-    referralsByStatus.map((r) => [r.status, r._count])
+    (referralsByStatus as { status: string; _count: number }[]).map((r) => [r.status, r._count])
   )
 
   return Response.json({

@@ -73,6 +73,14 @@ export async function POST(request: NextRequest) {
   // Validate referral code
   const referrer = await prisma.referrer.findUnique({
     where: { referralCode },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      isActive: true,
+      isDisqualified: true,
+    },
   })
 
   if (!referrer || !referrer.isActive || referrer.isDisqualified) {
@@ -104,6 +112,7 @@ export async function POST(request: NextRequest) {
   // Check for duplicate phone (already a referral from this number)
   const existingReferral = await prisma.referral.findFirst({
     where: { refereePhone, isDisqualified: false },
+    select: { id: true },
   })
 
   if (existingReferral) {

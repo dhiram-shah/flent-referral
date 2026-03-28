@@ -71,6 +71,7 @@ model Referral {
 
   @@index([referrerId])
   @@index([refereePhone])
+  @@index([refereePhone, isDisqualified])
   @@index([status])
 }
 
@@ -88,6 +89,8 @@ model MilestoneConfig {
   updatedAt         DateTime @updatedAt
 
   redemptions Redemption[]
+
+  @@index([isActive, referralsRequired])
 }
 
 model Redemption {
