@@ -36,8 +36,7 @@ export default async function LandingPage() {
       <nav
         className="sticky top-0 z-50"
         style={{
-          background: 'rgba(252,251,247,0.92)',
-          borderBottom: '1px solid var(--border)',
+          background: 'rgba(252,251,247,0.75)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
         }}
@@ -47,21 +46,50 @@ export default async function LandingPage() {
             maxWidth: 1160,
             margin: '0 auto',
             padding: '0 32px',
-            height: 64,
+            height: 68,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          <a href="https://flent.in" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-            <img src="/logo.png" alt="flent" style={{ height: 26, display: 'block' }} />
+          {/* Logo in bordered oval — matches flent.in */}
+          <a href="https://flent.in" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+            <div
+              style={{
+                border: '1.5px solid var(--brand)',
+                borderRadius: 999,
+                padding: '7px 18px',
+                display: 'inline-flex',
+                alignItems: 'center',
+              }}
+            >
+              <img src="/logo.png" alt="flent" style={{ height: 22, display: 'block' }} />
+            </div>
           </a>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link href="/login" className="btn-pastel-peach" style={{ padding: '7px 18px', fontSize: 13 }}>
+          {/* Right: plain sign-in + bordered Join pill */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <Link
+              href="/login"
+              style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500, textDecoration: 'none', opacity: 0.75 }}
+            >
               Sign in
             </Link>
-            <Link href="/signup" className="btn-pastel-violet" style={{ padding: '8px 20px', fontSize: 13 }}>
-              Join — it&apos;s free
+            <Link
+              href="/signup"
+              style={{
+                color: 'var(--text)',
+                fontSize: 14,
+                fontWeight: 700,
+                textDecoration: 'none',
+                border: '1.5px solid var(--brand)',
+                borderRadius: 999,
+                padding: '9px 22px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              Join — it&apos;s free →
             </Link>
           </div>
         </div>
@@ -70,12 +98,29 @@ export default async function LandingPage() {
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section
         style={{
-          background: 'linear-gradient(165deg, #F5EAD4 0%, #F8F2E4 50%, var(--bg) 100%)',
+          position: 'relative',
+          background: 'var(--bg)',
           borderBottom: '1px solid var(--border)',
+          overflow: 'hidden',
         }}
       >
+        {/* Geometric pattern — 50% opacity at top, fades to 0% at bottom */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: "url('/patterns/pie-factory.svg')",
+            backgroundSize: '60px 60px',
+            backgroundRepeat: 'repeat',
+            WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%)',
+            maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%)',
+          }}
+        />
       <div
         style={{
+          position: 'relative',
+          zIndex: 1,
           maxWidth: 1000,
           margin: '0 auto',
           padding: 'clamp(72px, 10vw, 110px) 20px clamp(64px, 8vw, 88px)',
