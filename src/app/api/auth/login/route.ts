@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, after } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { createOtpSession } from '@/lib/otp'
@@ -34,8 +34,21 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const otp = await createOtpSession(email, referrer.id)
-  await sendOtpEmail(email, referrer.name, otp).catch(console.error)
+  let otp: string
+  try {
+    otp = await createOtpSession(email, referrer.id)
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('COOLDOWN:')) {
+      const remaining = parseInt(err.message.split(':')[1])
+      return Response.json(
+        { error: `Please wait ${remaining}s before requesting another code.`, cooldown: remaining },
+        { status: 429 }
+      )
+    }
+    throw err
+  }
+
+  after(() => { sendOtpEmail(email, referrer.name, otp).catch(console.error) })
 
   return Response.json({ status: 'otp_sent' })
 }

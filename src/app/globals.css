@@ -262,6 +262,30 @@ body {
   }
 }
 
+/*
+  ── H1 display convention ────────────────────────────────────────────────
+  Line 1 (sans): no class — body font (Plus Jakarta Sans), fontWeight 800
+  Line 2 (serif italic): className="serif-italic" — Playfair Display italic
+*/
+
+/* ── Marquee ─────────────────────────────────────────────────────────────── */
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+.marquee-inner {
+  display: inline-flex;
+  width: max-content;
+  animation: marquee-left 70s linear infinite;
+}
+.marquee-inner.marquee-reverse {
+  animation: marquee-right 60s linear infinite;
+}
+
 /* ── Scroll timeline animation ──────────────────────────────────────────── */
 .timeline-step {
   opacity: 0;

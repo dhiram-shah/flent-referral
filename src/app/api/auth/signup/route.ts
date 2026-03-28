@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, after } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { createOtpSession } from '@/lib/otp'
@@ -10,6 +10,17 @@ const schema = z.object({
   email: z.string().email(),
   city: z.string().optional(),
 })
+
+function cooldownResponse(err: unknown): Response | null {
+  if (err instanceof Error && err.message.startsWith('COOLDOWN:')) {
+    const remaining = parseInt(err.message.split(':')[1])
+    return Response.json(
+      { error: `Please wait ${remaining}s before requesting another code.`, cooldown: remaining },
+      { status: 429 }
+    )
+  }
+  return null
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null)
@@ -33,17 +44,29 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       )
     }
-    // Already registered — resend OTP to allow re-login
-    const otp = await createOtpSession(email, existing.id)
-    await sendOtpEmail(email, name, otp).catch(console.error)
+    // Already registered — send OTP to allow re-login
+    let otp: string
+    try {
+      otp = await createOtpSession(email, existing.id)
+    } catch (err) {
+      const res = cooldownResponse(err)
+      if (res) return res
+      throw err
+    }
+    after(() => { sendOtpEmail(email, existing.name, otp).catch(console.error) })
     return Response.json({ status: 'otp_sent', message: 'OTP sent to your email.', existing: true })
   }
 
   // New registration — create OTP session (account created after verification)
-  const otp = await createOtpSession(email)
-  await sendOtpEmail(email, name, otp).catch(console.error)
+  let otp: string
+  try {
+    otp = await createOtpSession(email)
+  } catch (err) {
+    const res = cooldownResponse(err)
+    if (res) return res
+    throw err
+  }
 
-  // Store pending registration data in OTP session via a short-lived cache approach
-  // We'll include the user data in the verify step via the request body
+  after(() => { sendOtpEmail(email, name, otp).catch(console.error) })
   return Response.json({ status: 'otp_sent', message: 'OTP sent to your email.' })
 }

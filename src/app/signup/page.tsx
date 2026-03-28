@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 
 type Step = 'form' | 'otp' | 'success'
@@ -15,9 +15,29 @@ export default function SignupPage() {
   const [form, setForm] = useState({ name: '', phone: '', email: '', city: '' })
   const [otp, setOtp] = useState('')
 
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendMsg, setResendMsg] = useState('')
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   function update(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }))
     setError('')
+  }
+
+  function startResendCooldown() {
+    if (cooldownRef.current) clearInterval(cooldownRef.current)
+    setResendCooldown(60)
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!)
+          cooldownRef.current = null
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
   }
 
   async function handleSignup(e: React.FormEvent) {
@@ -36,8 +56,31 @@ export default function SignupPage() {
         return
       }
       setStep('otp')
+      startResendCooldown()
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleResend() {
+    setResendLoading(true)
+    setResendMsg('')
+    setError('')
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error ?? 'Could not resend. Please try again.')
+        return
+      }
+      setResendMsg('Code resent — check your inbox.')
+      startResendCooldown()
+    } finally {
+      setResendLoading(false)
     }
   }
 
@@ -195,6 +238,11 @@ export default function SignupPage() {
                   autoFocus
                 />
                 {error && <ErrorMsg>{error}</ErrorMsg>}
+                {resendMsg && (
+                  <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--success)', margin: 0 }}>
+                    {resendMsg}
+                  </p>
+                )}
                 <button
                   type="submit"
                   disabled={loading || otp.length < 6}
@@ -214,13 +262,23 @@ export default function SignupPage() {
               </form>
               <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: 'var(--muted)' }}>
                 Didn&apos;t receive it? Check spam or{' '}
-                <button
-                  onClick={handleSignup as unknown as React.MouseEventHandler<HTMLButtonElement>}
-                  className="btn-pastel-peach"
-                  style={{ padding: '5px 12px', fontSize: 12 }}
-                >
-                  Resend
-                </button>
+                {resendCooldown > 0 ? (
+                  <span style={{ color: 'var(--muted)' }}>resend in {resendCooldown}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendLoading}
+                    style={{
+                      background: 'none', border: 'none', padding: 0,
+                      color: 'var(--brand)', fontWeight: 600, fontSize: 13,
+                      cursor: resendLoading ? 'default' : 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    {resendLoading ? 'sending…' : 'resend it'}
+                  </button>
+                )}
                 .
               </p>
             </>

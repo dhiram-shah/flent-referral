@@ -95,7 +95,7 @@ export function HowItWorks() {
             className="serif"
             style={{
               fontSize: 'clamp(32px, 5vw, 52px)',
-              fontWeight: 800,
+              fontWeight: 600,
               color: '#15102E',
               lineHeight: 1.1,
             }}
@@ -199,7 +199,7 @@ export function HowItWorks() {
                     }}
                   />
                   <h3 style={{
-                    fontWeight: 800, fontSize: 20,
+                    fontWeight: 600, fontSize: 20,
                     color: '#15102E', marginBottom: 12,
                     lineHeight: 1.3,
                   }}>

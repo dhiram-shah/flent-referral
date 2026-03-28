@@ -30,16 +30,31 @@ export default async function LandingPage() {
   const milestones = await getMilestones()
 
   return (
-    <main style={{ background: 'var(--bg)', minHeight: '100vh' }}>
+    <main style={{ background: 'var(--bg)', minHeight: '100vh', position: 'relative' }}>
+
+      {/* ── Geometric pattern — covers nav + hero, fades out below ─────── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '100vh',
+          backgroundImage: "url('/patterns/pie-factory.svg')",
+          backgroundSize: '60px 60px',
+          backgroundRepeat: 'repeat',
+          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 100%)',
+          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 100%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
 
       {/* ── Nav ──────────────────────────────────────────────────────────── */}
       <nav
         className="sticky top-0 z-50"
-        style={{
-          background: 'rgba(252,251,247,0.75)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-        }}
+        style={{ background: 'transparent' }}
       >
         <div
           style={{
@@ -52,10 +67,11 @@ export default async function LandingPage() {
             justifyContent: 'space-between',
           }}
         >
-          {/* Logo in bordered oval — matches flent.in */}
+          {/* Logo pill — solid bg so it reads over the pattern/content */}
           <a href="https://flent.in" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
             <div
               style={{
+                background: 'var(--bg)',
                 border: '1.5px solid var(--brand)',
                 borderRadius: 999,
                 padding: '7px 18px',
@@ -66,30 +82,12 @@ export default async function LandingPage() {
               <img src="/logo.png" alt="flent" style={{ height: 22, display: 'block' }} />
             </div>
           </a>
-          {/* Right: plain sign-in + bordered Join pill */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <Link
-              href="/login"
-              style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500, textDecoration: 'none', opacity: 0.75 }}
-            >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Link href="/login" className="btn-pastel-peach" style={{ padding: '7px 18px', fontSize: 13 }}>
               Sign in
             </Link>
-            <Link
-              href="/signup"
-              style={{
-                color: 'var(--text)',
-                fontSize: 14,
-                fontWeight: 700,
-                textDecoration: 'none',
-                border: '1.5px solid var(--brand)',
-                borderRadius: 999,
-                padding: '9px 22px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-              }}
-            >
-              Join — it&apos;s free →
+            <Link href="/signup" className="btn-pastel-violet" style={{ padding: '8px 20px', fontSize: 13 }}>
+              Join — it&apos;s free
             </Link>
           </div>
         </div>
@@ -98,29 +96,13 @@ export default async function LandingPage() {
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section
         style={{
-          position: 'relative',
-          background: 'var(--bg)',
+          background: 'transparent',
           borderBottom: '1px solid var(--border)',
-          overflow: 'hidden',
+          position: 'relative',
         }}
       >
-        {/* Geometric pattern — 50% opacity at top, fades to 0% at bottom */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: "url('/patterns/pie-factory.svg')",
-            backgroundSize: '60px 60px',
-            backgroundRepeat: 'repeat',
-            WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%)',
-            maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%)',
-          }}
-        />
       <div
         style={{
-          position: 'relative',
-          zIndex: 1,
           maxWidth: 1000,
           margin: '0 auto',
           padding: 'clamp(72px, 10vw, 110px) 20px clamp(64px, 8vw, 88px)',
@@ -155,10 +137,10 @@ export default async function LandingPage() {
         </div>
 
         <h1
-          className="serif"
           style={{
+            fontFamily: 'var(--font-sans), "Plus Jakarta Sans", sans-serif',
             fontSize: 'clamp(54px, 8vw, 90px)',
-            fontWeight: 800,
+            fontWeight: 700,
             lineHeight: 1.06,
             color: 'var(--text)',
             marginBottom: 4,
@@ -170,7 +152,7 @@ export default async function LandingPage() {
           className="serif-italic"
           style={{
             fontSize: 'clamp(54px, 8vw, 90px)',
-            fontWeight: 700,
+            fontWeight: 500,
             lineHeight: 1.06,
             color: 'var(--brand)',
             marginBottom: 28,
@@ -255,97 +237,91 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── What you can earn / win ───────────────────────────────────────── */}
-      <section style={{ padding: '96px 32px', background: 'var(--bg)' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 44 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: 'var(--brand)',
-                textTransform: 'uppercase' as const,
-                letterSpacing: 3,
-                marginBottom: 16,
-              }}
-            >
-              What you can win
+      {/* ── Marquee — angled overlapping strips ──────────────────────────── */}
+      <div style={{ position: 'relative', padding: '64px 0', overflow: 'hidden', background: 'var(--bg)' }}>
+        {/* Strip 1 — light, scrolls left, behind */}
+        <div
+          style={{
+            transform: 'rotate(-1deg)',
+            width: '120%',
+            marginLeft: '-10%',
+            marginRight: '-10%',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          <div style={{ padding: '14px 0', background: 'var(--surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+            <div className="marquee-inner">
+              {[...Array(2)].map((_, i) => (
+                <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  {[
+                    ['Good karma, guaranteed.', false],
+                    ['Your friend thanks you forever.', true],
+                    ['They move in happy.', false],
+                    ['You earn something real.', false],
+                    ['The best kind of win-win.', false],
+                  ].map(([text, italic], j) => (
+                    <span key={j} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      <span style={{
+                        fontStyle: italic ? 'italic' : 'normal',
+                        fontWeight: 400,
+                        fontSize: 15,
+                        color: 'var(--text)',
+                        opacity: 0.65,
+                        whiteSpace: 'nowrap',
+                        paddingRight: 32,
+                      }}>{text as string}</span>
+                      <span style={{ color: 'var(--brand)', opacity: 0.25, fontSize: 13, paddingRight: 32 }}>✦</span>
+                    </span>
+                  ))}
+                </span>
+              ))}
             </div>
-            <h2 className="serif" style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'var(--text)', marginBottom: 10 }}>
-              Rewards worth sharing
-            </h2>
-            <p style={{ color: 'var(--muted)', fontSize: 16, maxWidth: 520, margin: '0 auto', lineHeight: 1.7 }}>
-              Unlock milestones and redeem premium rewards — from everyday vouchers to big-ticket wins.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              gap: 16,
-              overflowX: 'auto',
-              padding: '6px 2px 14px',
-              scrollSnapType: 'x mandatory',
-              WebkitOverflowScrolling: 'touch',
-            }}
-            aria-label="Rewards carousel"
-          >
-            {WIN_ITEMS.map((item) => (
-              <div
-                key={item.title}
-                style={{
-                  scrollSnapAlign: 'start',
-                  minWidth: 240,
-                  maxWidth: 260,
-                  flex: '0 0 auto',
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 22,
-                  padding: '22px 18px',
-                  boxShadow: '0 10px 30px rgba(24,41,61,0.06)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                  <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 14,
-                      border: '1px solid var(--border)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'linear-gradient(180deg, #FFFFFF 0%, #F7F6F2 100%)',
-                    }}
-                  >
-                    <item.Icon />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)', lineHeight: 1.2 }}>
-                      {item.title}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{item.sub}</div>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    height: 1,
-                    background: 'var(--border)',
-                    margin: '14px 0',
-                  }}
-                />
-                <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.7 }}>
-                  Redeem when you hit the next tier.
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ textAlign: 'center', marginTop: 14, fontSize: 12, color: 'var(--muted)' }}>
-            Scroll to explore the possibilities.
           </div>
         </div>
-      </section>
+
+        {/* Strip 2 — brand navy, scrolls right, overlaps strip 1 */}
+        <div
+          style={{
+            transform: 'rotate(1deg)',
+            width: '120%',
+            marginLeft: '0%',
+            marginRight: '-10%',
+            position: 'relative',
+            zIndex: 2,
+            marginTop: '-14px',
+          }}
+        >
+          <div style={{ padding: '14px 0', background: 'var(--brand)' }}>
+            <div className="marquee-inner marquee-reverse">
+              {[...Array(2)].map((_, i) => (
+                <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  {[
+                    ['Refer once. Earn for real.', false],
+                    ['Your network = your net worth.', true],
+                    ["Friends don't let friends pay brokers.", false],
+                    ['Move-in ready. Reward ready.', false],
+                    ['Flent homes. Real rewards.', true],
+                    ['Every milestone, something better.', false],
+                  ].map(([text, italic], j) => (
+                    <span key={j} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      <span style={{
+                        fontStyle: italic ? 'italic' : 'normal',
+                        fontWeight: 400,
+                        fontSize: 15,
+                        color: '#fff',
+                        whiteSpace: 'nowrap',
+                        paddingRight: 32,
+                      }}>{text as string}</span>
+                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13, paddingRight: 32 }}>✦</span>
+                    </span>
+                  ))}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ── How it works — scroll timeline (client component) ────────────── */}
       <HowItWorks />
@@ -369,7 +345,7 @@ export default async function LandingPage() {
               </div>
               <h2
                 className="serif"
-                style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'var(--text)', marginBottom: 12 }}
+                style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}
               >
                 Every milestone, a better reward
               </h2>
@@ -474,7 +450,7 @@ export default async function LandingPage() {
             </div>
             <h2
               className="serif"
-              style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'var(--text)', marginBottom: 12 }}
+              style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}
             >
               Your friends will actually thank you
             </h2>
@@ -531,7 +507,7 @@ export default async function LandingPage() {
                 <div style={{ fontSize: 24, marginBottom: 12, lineHeight: 1 }}>
                   {item.icon}
                 </div>
-                <h3 style={{ fontWeight: 800, fontSize: 15, color: '#15102E', marginBottom: 8, lineHeight: 1.3 }}>
+                <h3 style={{ fontWeight: 700, fontSize: 15, color: '#15102E', marginBottom: 8, lineHeight: 1.3 }}>
                   {item.title}
                 </h3>
                 <p style={{ color: 'rgba(21,16,46,0.68)', fontSize: 13, lineHeight: 1.7 }}>{item.desc}</p>
@@ -559,7 +535,7 @@ export default async function LandingPage() {
             </div>
             <h2
               className="serif"
-              style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'var(--text)' }}
+              style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 600, color: 'var(--text)' }}
             >
               A community that&apos;s already growing fast
             </h2>
@@ -606,7 +582,7 @@ export default async function LandingPage() {
                   className="serif"
                   style={{
                     fontSize: 'clamp(48px, 7vw, 72px)',
-                    fontWeight: 800,
+                    fontWeight: 700,
                     color: item.textColor,
                     lineHeight: 1,
                     marginBottom: 16,
@@ -633,72 +609,70 @@ export default async function LandingPage() {
       {/* ── FAQ ────────────────────────────────────────────────────────────── */}
       <FaqAccordion />
 
-      {/* ── CTA banner ───────────────────────────────────────────────────── */}
-      <section style={{ padding: '0 32px 96px' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <div
+      {/* ── CTA banner — full width, brand bg, zig-zag pattern ──────────── */}
+      <section style={{ position: 'relative', background: '#7B4426', padding: '96px 32px', overflow: 'hidden' }}>
+        {/* Ghostly zig-zag pattern */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: "url('/patterns/zig-zag.svg')",
+            backgroundSize: '40px 12px',
+            backgroundRepeat: 'repeat',
+            filter: 'invert(1)',
+            opacity: 0.035,
+            pointerEvents: 'none',
+          }}
+        />
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
+          <h2
             style={{
-              background: 'var(--brand)',
-              borderRadius: 28,
-              padding: '72px 48px',
-              textAlign: 'center',
+              fontFamily: 'var(--font-sans), "Plus Jakarta Sans", sans-serif',
+              color: '#fff',
+              fontSize: 'clamp(32px, 5vw, 54px)',
+              fontWeight: 700,
+              marginBottom: 8,
+              lineHeight: 1.08,
             }}
           >
-            <h2
-              className="serif"
+            Your next reward is
+          </h2>
+          <h2
+            className="serif-italic"
+            style={{
+              color: 'rgba(255,255,255,0.75)',
+              fontSize: 'clamp(32px, 5vw, 54px)',
+              fontWeight: 500,
+              marginBottom: 32,
+              lineHeight: 1.08,
+            }}
+          >
+            one referral away.
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 16, maxWidth: 380, margin: '0 auto 44px', lineHeight: 1.75 }}>
+            Free to join. Takes under a minute. Your code is waiting.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+            <Link
+              href="/signup"
               style={{
-                color: '#fff',
-                fontSize: 'clamp(26px, 4vw, 42px)',
-                fontWeight: 800,
-                marginBottom: 16,
-                lineHeight: 1.15,
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: '#fff',
+                color: 'var(--brand)',
+                padding: '16px 44px',
+                borderRadius: 999,
+                fontWeight: 700,
+                fontSize: 15,
+                textDecoration: 'none',
               }}
             >
-              Your next reward is
-              <br />
-              one referral away.
-            </h2>
-            <p
-              style={{
-                color: 'rgba(255,255,255,0.6)',
-                fontSize: 16,
-                maxWidth: 400,
-                margin: '0 auto 40px',
-                lineHeight: 1.75,
-              }}
-            >
-              Create a free account and get your referral code in under a minute.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-              <Link
-                href="/signup"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  background: '#fff',
-                  color: 'var(--brand)',
-                  padding: '16px 44px',
-                  borderRadius: 999,
-                  fontWeight: 700,
-                  fontSize: 15,
-                  textDecoration: 'none',
-                  transition: 'opacity 0.15s',
-                }}
-              >
-                Get my referral code — it&apos;s free
-              </Link>
-              <Link
-                href="/login"
-                style={{
-                  color: 'rgba(255,255,255,0.6)',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  textDecoration: 'none',
-                }}
-              >
-                Already a member? Sign in →
-              </Link>
-            </div>
+              Get my referral code — it&apos;s free
+            </Link>
+            <Link href="/login" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+              Already a member? Sign in →
+            </Link>
           </div>
         </div>
       </section>

@@ -6,34 +6,38 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 ## Tech Stack
 - Next.js 16.2.1 (App Router, Turbopack) · TypeScript 5 · React 19
 - Prisma 7.5 (`@prisma/adapter-pg` + `PrismaPg`) · PostgreSQL via Supabase Session Pooler (IPv4)
-- Resend · Superchat (WhatsApp) · HubSpot webhooks · Typeform webhooks
-- Tailwind CSS v4 · Playfair Display via `next/font/google` · Vercel
+- Resend (`after()` for async email) · Superchat (WhatsApp) · HubSpot webhooks · Typeform webhooks
+- Tailwind CSS v4 · Zin Display Condensed via `next/font/local` (`--font-serif`) · Vercel
 
 ## Architecture
 - **Proxy** (`src/proxy.ts`) guards `/dashboard` + `/admin` — use `window.location.href` for auth-sensitive navigation (not `router.push`) so proxy reads fresh cookies
 - **Dual auth**: referrers: email OTP → JWT cookie (`flent_ref_token`, 30d) via `/api/auth/signup` + `/api/auth/verify-otp`; returning users: `/api/auth/login` + `/api/auth/verify-login`; admins: password → `flent_admin_token` (8h)
+- **OTP rate-limiting**: 60s cooldown enforced in `src/lib/otp.ts` (`createOtpSession` throws `COOLDOWN:N`); email fired via `after()` post-response to avoid blocking
 - **Notifications** (`src/lib/notifications.ts`) fires email + WhatsApp in parallel, logs to DB
 - **Milestone engine**: streak-based, resets on redemption; milestones are DB-configured
 
 ## Key Files
-- `prisma/schema.prisma` — data model (Referrer, Referral, MilestoneConfig, Redemption, ReferrerProgress, OtpSession)
+- `prisma/schema.prisma` — data model (Referrer, Referral, MilestoneConfig, Redemption, ReferrerProgress, OtpSession, AdminUser)
 - `prisma.config.ts` — Prisma v7 config (DATABASE_URL here, NOT in schema datasource block)
 - `src/lib/prisma.ts` — PrismaClient with PrismaPg adapter + `ssl: { rejectUnauthorized: false }` (DO NOT remove — required for Supabase)
-- `src/lib/resend.ts` — lazy Resend init; FROM address = `RESEND_FROM_EMAIL` env var (must be `referrals@email.flent.in`)
+- `src/lib/otp.ts` — OTP creation with 60s cooldown guard; `src/lib/resend.ts` — lazy Resend init
 - `src/app/api/webhooks/hubspot/route.ts` — tenant enrollment + referral status transitions
-- `src/app/globals.css` — design tokens + pill button classes (`.btn-pill`, `.btn-pill-outline`) + texture
+- `src/app/globals.css` — design tokens, `.btn-pill*`, `.btn-pastel-*`, marquee animations
+- `src/app/fonts/ZinDisplay.otf` — local serif font (Zin Display Condensed Demo by CarnokyType)
 
 ## Env Vars (critical)
 - `RESEND_FROM_EMAIL` = `referrals@email.flent.in` (flent.in domain not verified in Resend → 403)
 - `DATABASE_URL` = Supabase Session Pooler with IPv4 (port 5432, NOT 6543 transaction pooler)
 
 ## Decisions & Patterns
-- Resend lazily initialized — never instantiate at module level
+- Resend lazily initialized — never instantiate at module level; always fire via `after()` in route handlers
 - `window.location.href` for post-auth redirects; `router.push` bypasses proxy cookie check
 - Prisma v7: no `url` in datasource block; SSL config in `src/lib/prisma.ts` via adapter options
 - `scripts/` excluded from tsconfig (seed scripts); run with `npm run db:seed`
 - Streak resets only on explicit redemption; lifetime count never resets
-- UI design: warm cream `#F3EDE3` + star texture + Playfair Display serif — matches flent.in
+- **Dev bypass**: `proxy.ts` skips ALL auth checks when `NODE_ENV !== 'production'` — go directly to `/dashboard` or `/admin` locally, no login needed. `/dev` page has one-click shortcuts. `/api/dev/login` returns 404 in production.
+- Typography: `--font-sans` = Plus Jakarta Sans (body/UI), `--font-serif` = Zin Display (headers only); serif used via `.serif` / `.serif-italic` CSS classes
+- UI: warm cream `#FCFBF7` bg, brand navy `#15102E`, CTA section bg `#7B4426` (warm brown), pastel neo-brutalist buttons
 
 <!-- VERCEL BEST PRACTICES START -->
 ## Best practices for developing on Vercel

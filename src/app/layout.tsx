@@ -1,11 +1,10 @@
 import type { Metadata } from 'next'
-import { Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google'
+import localFont from 'next/font/local'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['700', '800'],
-  style: ['normal', 'italic'],
+const zinDisplay = localFont({
+  src: './fonts/ZinDisplay.otf',
   variable: '--font-serif',
   display: 'swap',
 })
@@ -36,7 +35,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`h-full ${playfair.variable} ${plusJakarta.variable}`}>
+    <html lang="en" className={`h-full ${zinDisplay.variable} ${plusJakarta.variable}`}>
       <body className="min-h-full">{children}</body>
     </html>
   )
