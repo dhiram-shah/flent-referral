@@ -217,30 +217,63 @@ export default function DashboardPage() {
         </nav>
 
         {/* Hero — referral code */}
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 700, margin: '0 auto', padding: 'clamp(40px, 6vw, 72px) 24px clamp(48px, 7vw, 80px)', textAlign: 'center' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--brand-light)', color: 'var(--brand)', padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, marginBottom: 28 }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 560, margin: '0 auto', padding: 'clamp(36px, 5vw, 60px) 24px clamp(44px, 6vw, 68px)', textAlign: 'center' }}>
+
+          {/* Badge */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--brand-light)', color: 'var(--brand)', padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, marginBottom: 20 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', flexShrink: 0 }} />
-            Your referral code
+            Referral Program
           </div>
-          <div style={{ marginBottom: 20 }}>
-            <p style={{ fontFamily: 'var(--font-sans), "Plus Jakarta Sans", sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--muted)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 }}>
-              Share with friends moving to Bangalore
-            </p>
-            <p className="serif-italic" style={{ fontSize: 'clamp(56px, 12vw, 96px)', fontWeight: 500, color: 'var(--brand)', letterSpacing: 6, lineHeight: 1 }}>
-              {referrer.referralCode}
-            </p>
-          </div>
-          <p style={{ color: 'var(--muted)', fontSize: 15, marginBottom: 32, lineHeight: 1.6, maxWidth: 420, margin: '0 auto 32px' }}>
-            Friends enter this code when they enquire on Flent — you earn a reward when they move in.
+
+          {/* Headline */}
+          <h1 className="serif-italic" style={{ fontSize: 'clamp(26px, 3.5vw, 40px)', fontWeight: 600, color: 'var(--brand)', lineHeight: 1.2, marginBottom: 12 }}>
+            Refer friends. Earn rewards.
+          </h1>
+
+          {/* Description — comes before code so context is clear */}
+          <p style={{ color: 'var(--muted)', fontSize: 15, lineHeight: 1.65, maxWidth: 380, margin: '0 auto 28px' }}>
+            Share your code with anyone moving to Bangalore. When they move into Flent, you unlock a reward.
           </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <button onClick={copyCode} className="btn-pastel-violet">
-              {copied ? '✓ Copied!' : 'Copy code'}
-            </button>
-            <button onClick={shareWhatsApp} className="btn-pastel-peach">
-              Share on WhatsApp
+
+          {/* Code box — inline copy, never breaks to two lines */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            background: 'var(--bg)',
+            border: '1.5px solid var(--brand)',
+            boxShadow: '4px 4px 0 var(--brand)',
+            borderRadius: 14,
+            padding: '10px 10px 10px 20px',
+            marginBottom: 12,
+          }}>
+            <span
+              className="serif-italic"
+              style={{
+                fontSize: 'clamp(18px, 3vw, 28px)',
+                fontWeight: 600,
+                color: 'var(--brand)',
+                letterSpacing: 3,
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
+                flex: 1,
+                textAlign: 'left',
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {referrer.referralCode}
+            </span>
+            <button onClick={copyCode} className="btn-pastel-violet" style={{ flexShrink: 0, fontSize: 13, padding: '9px 18px' }}>
+              {copied ? '✓ Copied' : 'Copy code'}
             </button>
           </div>
+
+          {/* WhatsApp share */}
+          <button onClick={shareWhatsApp} className="btn-pastel-peach" style={{ width: '100%', padding: '13px 24px', fontSize: 15 }}>
+            Share on WhatsApp
+          </button>
         </div>
       </div>
 
