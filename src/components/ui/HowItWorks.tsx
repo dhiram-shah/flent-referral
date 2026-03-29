@@ -27,69 +27,42 @@ const STEPS = [
 ]
 
 export function HowItWorks() {
-  const sectionRef = useRef<HTMLDivElement>(null)
-  const tapeBodyRef = useRef<HTMLDivElement>(null)
   const stepRefs = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {
-    // Respect prefers-reduced-motion — skip all animation for users who've opted out
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      stepRefs.current.forEach((el) => { if (el) el.classList.add('step-visible') })
-      if (tapeBodyRef.current) tapeBodyRef.current.style.transform = 'scaleY(1)'
+      stepRefs.current.forEach((el) => { if (el) el.classList.add('hiw-visible') })
       return
     }
 
-    // IntersectionObserver for reliable step reveal
     const observers: IntersectionObserver[] = []
     stepRefs.current.forEach((el) => {
       if (!el) return
       const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) el.classList.add('step-visible') },
-        { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+        ([entry]) => { if (entry.isIntersecting) el.classList.add('hiw-visible') },
+        { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
       )
       obs.observe(el)
       observers.push(obs)
     })
 
-    // Scroll-driven tape growth
-    let rafId: number
-    const updateTape = () => {
-      if (!sectionRef.current || !tapeBodyRef.current) return
-      const rect = sectionRef.current.getBoundingClientRect()
-      const windowH = window.innerHeight
-      const sectionH = sectionRef.current.offsetHeight
-      const progress = Math.max(0, Math.min(1, (windowH - rect.top) / (sectionH * 0.88)))
-      tapeBodyRef.current.style.transform = `scaleY(${progress})`
-    }
-    const onScroll = () => {
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(updateTape)
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    updateTape()
-
-    return () => {
-      observers.forEach((obs) => obs.disconnect())
-      window.removeEventListener('scroll', onScroll)
-      cancelAnimationFrame(rafId)
-    }
+    return () => observers.forEach((obs) => obs.disconnect())
   }, [])
 
   return (
     <section
-      ref={sectionRef}
       style={{
         position: 'relative',
-        padding: 'clamp(64px, 8vw, 96px) 20px clamp(80px, 10vw, 128px)',
+        padding: 'clamp(64px, 8vw, 96px) clamp(20px, 4vw, 48px) clamp(80px, 10vw, 128px)',
         background: 'linear-gradient(180deg, #F5F1E9 0%, #EFE9DE 55%, #F3EDE3 100%)',
         borderTop: '1px solid rgba(21,16,46,0.10)',
         borderBottom: '1px solid rgba(21,16,46,0.10)',
       }}
     >
-      <div style={{ maxWidth: 860, margin: '0 auto' }}>
+      <div style={{ maxWidth: 960, margin: '0 auto' }}>
 
         {/* Section header */}
-        <div style={{ marginBottom: 72 }}>
+        <div style={{ marginBottom: 80 }}>
           <div style={{
             fontSize: 11, fontWeight: 700,
             color: '#15102E', opacity: 0.45,
@@ -99,7 +72,7 @@ export function HowItWorks() {
             How it works
           </div>
           <h2
-            className="serif"
+            className="serif-italic"
             style={{
               fontSize: 'clamp(32px, 5vw, 52px)',
               fontWeight: 600,
@@ -107,136 +80,106 @@ export function HowItWorks() {
               lineHeight: 1.1,
             }}
           >
-            How <em style={{ fontStyle: 'italic' }}>Flent</em> Referrals Work
+            How Flent Referrals Work
           </h2>
-          <p style={{ color: 'rgba(21,16,46,0.68)', fontSize: 16, lineHeight: 1.8, maxWidth: 560, marginTop: 16 }}>
+          <p style={{
+            color: 'rgba(21,16,46,0.68)',
+            fontSize: 16,
+            lineHeight: 1.8,
+            maxWidth: 520,
+            marginTop: 16,
+          }}>
             A simple, trackable journey — built to feel private, premium, and worth sharing.
           </p>
         </div>
 
-        {/* Tape + Steps */}
-        <div className="timeline-steps-wrapper">
+        {/* Steps */}
+        <div>
+          {STEPS.map((step, i) => {
+            const isReversed = i % 2 === 1
+            return (
+              <div key={step.number}>
+                {i > 0 && (
+                  <div style={{ height: 1, background: 'rgba(21,16,46,0.10)' }} />
+                )}
+                <div
+                  ref={(el) => { stepRefs.current[i] = el }}
+                  className={`hiw-step${isReversed ? ' hiw-step-reverse' : ''}`}
+                  style={{ transitionDelay: `${i * 0.1}s` }}
+                >
+                  {/* Ghost number */}
+                  <div className="hiw-step-num" aria-hidden="true">
+                    <span
+                      className="serif-italic"
+                      style={{
+                        fontSize: 'clamp(80px, 13vw, 180px)',
+                        fontWeight: 600,
+                        color: 'var(--brand)',
+                        opacity: 0.08,
+                        lineHeight: 1,
+                        display: 'block',
+                        userSelect: 'none' as const,
+                        letterSpacing: -2,
+                      }}
+                    >
+                      {step.number}
+                    </span>
+                  </div>
 
-          {/* Measuring tape column — hidden on mobile */}
-          <div className="timeline-tape-col">
-            {/* Red square bobbin head */}
-            <div style={{
-              width: 36, height: 36,
-              background: '#c64747',
-              borderRadius: 6,
-              border: '2px solid #15102E',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '2px 2px 0 #15102E',
-              position: 'relative',
-              zIndex: 2,
-            }}>
-              <div style={{
-                width: 9, height: 9,
-                borderRadius: '50%',
-                background: '#15102E',
-              }} />
-            </div>
-
-            {/* Tape body container — clips the growing tape */}
-            <div style={{
-              position: 'absolute',
-              top: 36,
-              bottom: 0,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 22,
-              overflow: 'hidden',
-            }}>
-              <div
-                ref={tapeBodyRef}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  transformOrigin: 'top center',
-                  transform: 'scaleY(0)',
-                  background: '#f5d9a8',
-                  backgroundImage: [
-                    'repeating-linear-gradient(to bottom, transparent 0px, transparent 9px, rgba(0,0,0,0.1) 9px, rgba(0,0,0,0.1) 10px)',
-                    'repeating-linear-gradient(to right, transparent 0, transparent 14px, rgba(0,0,0,0.15) 14px, rgba(0,0,0,0.15) 22px)',
-                  ].join(', '),
-                  border: '1px solid #c9a040',
-                  borderTop: 'none',
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Step cards */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 40 }}>
-            {STEPS.map((step, i) => (
-              <div
-                key={step.number}
-                ref={(el) => { stepRefs.current[i] = el }}
-                className="timeline-step"
-                style={{ transitionDelay: `${i * 0.08}s` }}
-              >
-                <div style={{
-                  fontSize: 11, fontWeight: 700,
-                  color: '#15102E', opacity: 0.45,
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: 3, marginBottom: 12,
-                }}>
-                  Step {step.number}
-                </div>
-                <div style={{
-                  background: 'rgba(255,255,255,0.78)',
-                  borderRadius: 22,
-                  padding: '34px 30px',
-                  border: '1px solid rgba(21,16,46,0.12)',
-                  boxShadow: '0 18px 48px rgba(24,41,61,0.08)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}>
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 4,
-                      background: step.accent,
-                    }}
-                  />
-                  <h3 style={{
-                    fontWeight: 600, fontSize: 20,
-                    color: '#15102E', marginBottom: 12,
-                    lineHeight: 1.3,
-                  }}>
-                    {step.title}
-                  </h3>
-                  <p style={{
-                    color: 'rgba(21,16,46,0.7)',
-                    fontSize: 15, lineHeight: 1.8,
-                    marginBottom: 16,
-                  }}>
-                    {step.desc}
-                  </p>
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: 12, fontWeight: 700,
-                    color: '#15102E',
-                    background: 'rgba(21,16,46,0.04)',
-                    padding: '6px 12px',
-                    borderRadius: 999,
-                    border: '1px solid rgba(21,16,46,0.10)',
-                  }}>
-                    <CheckIcon /> {step.tag}
-                  </span>
+                  {/* Content */}
+                  <div className="hiw-step-content">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+                      {/* Neo-brutalist accent square */}
+                      <div
+                        aria-hidden="true"
+                        style={{
+                          width: 16,
+                          height: 16,
+                          flexShrink: 0,
+                          background: step.accent,
+                          border: '1.5px solid var(--brand)',
+                          boxShadow: '2px 2px 0 var(--brand)',
+                        }}
+                      />
+                      <h3 style={{
+                        fontWeight: 700,
+                        fontSize: 'clamp(18px, 2.5vw, 22px)',
+                        color: 'var(--brand)',
+                        lineHeight: 1.2,
+                        margin: 0,
+                      }}>
+                        {step.title}
+                      </h3>
+                    </div>
+                    <p style={{
+                      color: 'rgba(21,16,46,0.68)',
+                      fontSize: 16,
+                      lineHeight: 1.85,
+                      marginBottom: 22,
+                    }}>
+                      {step.desc}
+                    </p>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: '#15102E',
+                      background: 'rgba(21,16,46,0.04)',
+                      padding: '6px 12px',
+                      borderRadius: 999,
+                      border: '1px solid rgba(21,16,46,0.10)',
+                    }}>
+                      <CheckIcon /> {step.tag}
+                    </span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+            )
+          })}
         </div>
+
       </div>
     </section>
   )

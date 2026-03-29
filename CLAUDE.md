@@ -11,10 +11,10 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 
 ## Architecture
 - **Proxy** (`src/proxy.ts`) guards `/dashboard` + `/admin` — use `window.location.href` for auth-sensitive navigation (not `router.push`) so proxy reads fresh cookies
-- **Dual auth**: referrers: email OTP → JWT cookie (`flent_ref_token`, 30d) via `/api/auth/signup` + `/api/auth/verify-otp`; returning users: `/api/auth/login` + `/api/auth/verify-login`; admins: password → `flent_admin_token` (8h)
+- **Dual auth**: referrers: email OTP → JWT cookie (`flent_ref_token`, 30d); admins: password → `flent_admin_token` (8h)
 - **OTP rate-limiting**: 60s cooldown enforced in `src/lib/otp.ts` (`createOtpSession` throws `COOLDOWN:N`); email fired via `after()` post-response to avoid blocking
 - **Notifications** (`src/lib/notifications.ts`) fires email + WhatsApp in parallel, logs to DB
-- **Milestone engine**: streak-based, resets on redemption; milestones are DB-configured
+- **Milestone engine**: streak-based, resets on redemption; milestones are DB-configured with `FALLBACK_MILESTONES` in `page.tsx` for local dev
 
 ## Key Files
 - `prisma/schema.prisma` — data model (Referrer, Referral, MilestoneConfig, Redemption, ReferrerProgress, OtpSession, AdminUser)
@@ -22,22 +22,34 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 - `src/lib/prisma.ts` — PrismaClient with PrismaPg adapter + `ssl: { rejectUnauthorized: false }` (DO NOT remove — required for Supabase)
 - `src/lib/otp.ts` — OTP creation with 60s cooldown guard; `src/lib/resend.ts` — lazy Resend init
 - `src/app/api/webhooks/hubspot/route.ts` — tenant enrollment + referral status transitions
-- `src/app/globals.css` — design tokens, `.btn-pill*`, `.btn-pastel-*`, marquee animations
+- `src/app/globals.css` — design tokens, `.btn-pill*`, `.btn-pastel-*`, `.btn-pill-white`, `.milestone-grid`, marquee + ms-glow-pulse animations
 - `src/app/fonts/ZinDisplay.otf` — local serif font (Zin Display Condensed Demo by CarnokyType)
+- `src/components/ui/NavBar.tsx` — scroll-aware sticky nav (client component, backdrop blur on scroll)
+- `src/components/ui/HowItWorks.tsx` — ghost number split layout, IntersectionObserver stagger reveal
+- `src/components/ui/MilestoneRoadmap.tsx` — client component, scroll-triggered cascade + gold glow pulse, ghost watermark icons
 
 ## Env Vars (critical)
-- `RESEND_FROM_EMAIL` = `referrals@email.flent.in` (flent.in domain not verified in Resend → 403)
+- `RESEND_FROM_EMAIL` = `referrals@email.flent.in`
 - `DATABASE_URL` = Supabase Session Pooler with IPv4 (port 5432, NOT 6543 transaction pooler)
+
+## Recent Changes
+- **Dashboard milestone section** (`dashboard/page.tsx`): 4-state cards (locked/eligible/eligible_blocked/pending), hover-to-reveal "Claim now →", any eligible tier claimable independently, history strip with total earned value, 3rd stat col (rewards claimed)
+- **`/api/referrers/me`**: now returns `redeemableMilestones[]`, `pendingRedemption`, `redeemedHistory[]`, `totalEarnedValue`; dev bypass returns rich stub data with sample milestones/referrals
+- **MilestoneRoadmap** (`src/components/ui/MilestoneRoadmap.tsx`): dark navy section, pastel cards, ghost watermark icons (88×88 SVG, opacity 0.08), scroll-triggered cascade (inline `el.style.*`) + gold glow pulse
+- **Auth pages** (`signup/`, `login/`): pie-factory overlay, logo pill, `serif-italic` headings, neo-brutalist card, cream referral code display, SVG checkmark
 
 ## Decisions & Patterns
 - Resend lazily initialized — never instantiate at module level; always fire via `after()` in route handlers
 - `window.location.href` for post-auth redirects; `router.push` bypasses proxy cookie check
 - Prisma v7: no `url` in datasource block; SSL config in `src/lib/prisma.ts` via adapter options
-- `scripts/` excluded from tsconfig (seed scripts); run with `npm run db:seed`
 - Streak resets only on explicit redemption; lifetime count never resets
-- **Dev bypass**: `proxy.ts` skips ALL auth checks when `NODE_ENV !== 'production'` — go directly to `/dashboard` or `/admin` locally, no login needed. `/dev` page has one-click shortcuts. `/api/dev/login` returns 404 in production.
 - Typography: `--font-sans` = Plus Jakarta Sans (body/UI), `--font-serif` = Zin Display (headers only); serif used via `.serif` / `.serif-italic` CSS classes
-- UI: warm cream `#FCFBF7` bg, brand navy `#15102E`, CTA section bg `#7B4426` (warm brown), pastel neo-brutalist buttons
+- UI: cream `#FCFBF7` bg, brand navy `#15102E`, pastel neo-brutalist buttons (3–4px hard shadow), no emojis anywhere as structural icons
+- **Scroll animations**: use `el.style.*` inline (not CSS classes) for scroll-triggered reveals in Turbopack — CSS class state races with hydration. Use double-RAF (`requestAnimationFrame(() => requestAnimationFrame(...))`) before starting transitions.
+- **Auth page pattern**: pie-factory.svg overlay at opacity 0.05 (position absolute, inset 0); logo pill = `{bg: var(--bg), border: 1.5px solid var(--brand), borderRadius: 999}`; card = `{border: 1.5px solid var(--brand), boxShadow: 4px 4px 0 var(--brand)}`
+- `FALLBACK_MILESTONES` in `page.tsx` — milestone section always renders locally even without DB
+- **Dev bypass**: `NODE_ENV !== 'production'` in `proxy.ts` + `/api/referrers/me` returns stub data — `/dashboard` fully viewable locally without auth or DB
+- **Multi-tier redemption**: any milestone where `streak >= referralsRequired` is independently claimable; `redeemableMilestones[]` empty when pending exists; streak resets on every claim
 
 <!-- VERCEL BEST PRACTICES START -->
 ## Best practices for developing on Vercel

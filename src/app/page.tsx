@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { NavBar } from '@/components/ui/NavBar'
 import { HowItWorks } from '@/components/ui/HowItWorks'
+import { MilestoneRoadmap } from '@/components/ui/MilestoneRoadmap'
 import { FaqAccordion } from '@/components/ui/FaqAccordion'
 
 async function getMilestones() {
@@ -16,7 +17,6 @@ async function getMilestones() {
   }
 }
 
-const REWARD_ICONS = ['🎁', '🛍️', '🎧', '✈️', '🏆']
 
 const FALLBACK_MILESTONES = [
   { id: 'f1', tierNumber: 1, referralsRequired: 1, rewardName: 'Amazon Voucher', rewardDescription: '₹500 voucher — a small thank you for your first referral.' },
@@ -157,59 +157,58 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Trust strip ──────────────────────────────────────────────────── */}
-      <section
-        style={{
-          background: 'var(--surface)',
-          borderTop: '1px solid var(--border)',
-          borderBottom: '1px solid var(--border)',
-        }}
-      >
+      <section style={{ borderBottom: '1px solid var(--border)' }}>
         <div
-          className="trust-strip-grid"
           style={{
             maxWidth: 1000,
             margin: '0 auto',
             padding: '0 20px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '1px',
+            background: 'var(--border)',
           }}
         >
           {[
-            { Icon: BoltOutlineIcon, label: 'Sign up in 60 seconds', sub: 'Instant referral code' },
-            { Icon: InfinityOutlineIcon, label: 'No cap on earnings', sub: 'Every referral counts' },
-            { Icon: HomeOutlineIcon, label: 'Homes friends will love', sub: 'Premium, move-in ready' },
-            { Icon: SupportOutlineIcon, label: 'Real human support', sub: 'sales@flent.in' },
+            { stat: '₹0', label: 'to join', sub: 'Free forever, no fees' },
+            { stat: '∞', label: 'referrals possible', sub: 'No cap, ever' },
+            { stat: '12', label: 'rewards to unlock', sub: 'Each one bigger than the last' },
           ].map((item) => (
             <div
-              key={item.label}
+              key={item.stat}
               style={{
+                background: 'var(--bg)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                padding: '28px 16px',
+                padding: 'clamp(24px, 4vw, 40px) 16px',
                 textAlign: 'center',
               }}
             >
-              <div
-                style={{
-                  marginBottom: 12,
-                  color: 'var(--brand)',
-                  lineHeight: 1,
-                  display: 'flex',
-                  justifyContent: 'center',
-                }}
-              >
-                <item.Icon />
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+                <span
+                  className="serif"
+                  style={{
+                    fontSize: 'clamp(40px, 5vw, 56px)',
+                    fontWeight: 700,
+                    color: 'var(--brand)',
+                    lineHeight: 1,
+                  }}
+                >
+                  {item.stat}
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--brand)', opacity: 0.5 }}>
+                  {item.label}
+                </span>
               </div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 4 }}>
-                {item.label}
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--muted)' }}>{item.sub}</div>
+              <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{item.sub}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── Marquee — angled overlapping strips ──────────────────────────── */}
-      <div style={{ position: 'relative', padding: '64px 0', overflow: 'hidden', background: 'var(--bg)' }}>
+      <div style={{ position: 'relative', padding: '48px 0', overflow: 'hidden', background: 'var(--bg)' }}>
         {/* Strip 1 — light, scrolls left, behind */}
         <div
           style={{
@@ -258,7 +257,7 @@ export default async function LandingPage() {
             marginLeft: '-25%',
             position: 'relative',
             zIndex: 2,
-            marginTop: '-14px',
+            marginTop: '-38px',
           }}
         >
           <div style={{ padding: '14px 0', background: 'var(--brand)' }}>
@@ -296,108 +295,9 @@ export default async function LandingPage() {
       <HowItWorks />
 
       {/* ── Reward roadmap ───────────────────────────────────────────────── */}
-      {(() => {
-        const displayMilestones = milestones.length > 0 ? milestones : FALLBACK_MILESTONES
-        return (
-        <section style={{ padding: 'clamp(64px, 8vw, 96px) clamp(20px, 4vw, 32px)' }}>
-          <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 56 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--brand)',
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: 3,
-                  marginBottom: 16,
-                }}
-              >
-                Rewards
-              </div>
-              <h2
-                className="serif"
-                style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}
-              >
-                Every milestone, a better reward
-              </h2>
-              <p
-                style={{
-                  color: 'var(--muted)',
-                  fontSize: 16,
-                  maxWidth: 480,
-                  margin: '0 auto',
-                  lineHeight: 1.7,
-                }}
-              >
-                Rewards unlock as you build your streak. Redeem one and start the next level.
-              </p>
-            </div>
+      <MilestoneRoadmap milestones={milestones.length > 0 ? milestones : FALLBACK_MILESTONES} />
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-                gap: 16,
-              }}
-            >
-              {displayMilestones.map((m, i) => (
-                <div
-                  key={m.id}
-                  style={{
-                    background: 'var(--surface)',
-                    borderRadius: 20,
-                    padding: '28px 16px',
-                    border: '2px solid var(--brand)',
-                    boxShadow: '4px 4px 0 var(--brand)',
-                    textAlign: 'center',
-                    position: 'relative',
-                  }}
-                >
-                  <div style={{ fontSize: 30, marginBottom: 12 }}>{REWARD_ICONS[i] ?? '🎁'}</div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: 'var(--brand)',
-                      textTransform: 'uppercase' as const,
-                      letterSpacing: 1,
-                      marginBottom: 6,
-                    }}
-                  >
-                    {m.referralsRequired} {m.referralsRequired === 1 ? 'referral' : 'referrals'}
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>
-                    {m.rewardName}
-                  </div>
-                  {m.rewardDescription && (
-                    <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
-                      {m.rewardDescription}
-                    </div>
-                  )}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 10,
-                      right: 10,
-                      background: 'var(--brand-light)',
-                      color: 'var(--brand)',
-                      fontSize: 10,
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: 999,
-                    }}
-                  >
-                    Tier {m.tierNumber}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-        )
-      })()}
-
-      {/* ── Why your friends will love Flent ─────────────────────────────── */}
+      {/* ── For your friend ──────────────────────────────────────────────── */}
       <section
         style={{
           background: 'var(--surface)',
@@ -418,13 +318,13 @@ export default async function LandingPage() {
                 marginBottom: 16,
               }}
             >
-              Why refer
+              For your friend
             </div>
             <h2
-              className="serif"
+              className="serif-italic"
               style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}
             >
-              Your friends will actually thank you
+              Give them a home worth moving into
             </h2>
             <p
               style={{
@@ -439,31 +339,70 @@ export default async function LandingPage() {
             </p>
           </div>
 
-          <div className="friends-grid">
+          {/* Hero card */}
+          <div
+            style={{
+              background: '#cff0e9',
+              borderRadius: 20,
+              padding: 'clamp(32px, 5vw, 48px) clamp(28px, 4vw, 44px)',
+              border: '2px solid #15102E',
+              boxShadow: '4px 4px 0 #15102E',
+              marginBottom: 16,
+              display: 'flex',
+              gap: 32,
+              alignItems: 'flex-start',
+            }}
+          >
+            <div style={{ flexShrink: 0, marginTop: 4 }}>
+              <NoBrokerIcon />
+            </div>
+            <div>
+              <div style={{
+                fontSize: 11, fontWeight: 700,
+                color: '#15102E', opacity: 0.45,
+                textTransform: 'uppercase' as const, letterSpacing: 3,
+                marginBottom: 12,
+              }}>
+                The big one
+              </div>
+              <h3 style={{ fontWeight: 700, fontSize: 'clamp(18px, 2.5vw, 22px)', color: '#15102E', marginBottom: 12, lineHeight: 1.3 }}>
+                No brokerage. Not for them, not for you.
+              </h3>
+              <p style={{ color: 'rgba(21,16,46,0.68)', fontSize: 16, lineHeight: 1.8, maxWidth: 560 }}>
+                Flent cuts out brokers entirely. Instead of your friend paying a broker one month&apos;s rent, that money stays in their pocket — and we reward you for the introduction. Everyone wins.
+              </p>
+            </div>
+          </div>
+
+          {/* 3 supporting cards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: 16,
+            }}
+          >
             {[
               {
-                color: '#cff0e9',
-                icon: '💸',
-                title: 'No brokerage. We pay you instead.',
-                desc: "Flent cuts out brokers entirely. There's no middleman eating into your pocket — and instead of paying a broker, we reward you for the referral. Transparent pricing, no hidden charges.",
-              },
-              {
                 color: '#ffe2d8',
-                icon: '🔑',
-                title: 'No hefty deposits. Move in light.',
-                desc: "Standard rentals demand 2–3 months upfront. Flent keeps it minimal so your friend can hold onto their money for things that actually matter — like furnishing their social life.",
+                Icon: NoDepositIcon,
+                eyebrow: 'Move-in friendly',
+                title: 'No hefty deposit.',
+                desc: 'Minimal upfront costs — your friend holds on to their money for the things that matter.',
               },
               {
                 color: '#dad7f4',
-                icon: '🛋️',
-                title: '200+ items. Ready from day 0.',
-                desc: "Fully furnished homes with everything — kitchen essentials, appliances, linen, furniture. Your friend arrives, drops their bag, and gets on with their life. Zero setup stress.",
+                Icon: FurnishedIcon,
+                eyebrow: 'Day 0 ready',
+                title: '200+ items in every home.',
+                desc: 'Fully furnished and stocked. Arrive, drop the bag, start living. Zero setup.',
               },
               {
                 color: '#f5d9a8',
-                icon: '🎉',
-                title: 'More time for you to party.',
-                desc: "No repair drama, no chasing landlords, no random broker calls. Flent handles it all. Your friend gets their weekends back — and honestly, so do you. Who's bringing the wine?",
+                Icon: ZeroStressIcon,
+                eyebrow: 'No landlord drama',
+                title: 'Zero maintenance stress.',
+                desc: 'Flent handles repairs, cleaning, and support. Your friend gets their weekends back.',
               },
             ].map((item) => (
               <div
@@ -471,15 +410,23 @@ export default async function LandingPage() {
                 style={{
                   background: item.color,
                   borderRadius: 16,
-                  padding: '24px 20px',
+                  padding: '28px 24px',
                   border: '2px solid #15102E',
                   boxShadow: '4px 4px 0 #15102E',
                 }}
               >
-                <div style={{ fontSize: 24, marginBottom: 12, lineHeight: 1 }}>
-                  {item.icon}
+                <div style={{ marginBottom: 14 }}>
+                  <item.Icon />
                 </div>
-                <h3 style={{ fontWeight: 700, fontSize: 15, color: '#15102E', marginBottom: 8, lineHeight: 1.3 }}>
+                <div style={{
+                  fontSize: 11, fontWeight: 700,
+                  color: '#15102E', opacity: 0.45,
+                  textTransform: 'uppercase' as const, letterSpacing: 3,
+                  marginBottom: 8,
+                }}>
+                  {item.eyebrow}
+                </div>
+                <h3 style={{ fontWeight: 700, fontSize: 16, color: '#15102E', marginBottom: 8, lineHeight: 1.3 }}>
                   {item.title}
                 </h3>
                 <p style={{ color: 'rgba(21,16,46,0.68)', fontSize: 14, lineHeight: 1.7 }}>{item.desc}</p>
@@ -831,6 +778,47 @@ function BagOutlineIcon() {
     <svg {...iconBaseProps()}>
       <path d="M6 8.5H18L19 20H5L6 8.5Z" stroke="var(--brand)" strokeWidth="1.6" strokeLinejoin="round" />
       <path d="M9 8.5V7.5C9 5.84315 10.3431 4.5 12 4.5C13.6569 4.5 15 5.84315 15 7.5V8.5" stroke="var(--brand)" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+
+function NoBrokerIcon() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="2" y="6.5" width="20" height="13" rx="2" stroke="#15102E" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M9 10H13M9 10C9 12 11 12.5 11 12.5H9M9 10C9 10 9 8.5 10.5 8.5H13M11 12.5L13 15" stroke="#15102E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function NoDepositIcon() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="8.5" cy="11" r="4" stroke="#15102E" strokeWidth="1.6" />
+      <path d="M11.5 14L20.5 18.5" stroke="#15102E" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M17.5 16.5V19" stroke="#15102E" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M20 17.5V20" stroke="#15102E" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function FurnishedIcon() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 14V10.5C5 9.4 5.9 8.5 7 8.5H17C18.1 8.5 19 9.4 19 10.5V14" stroke="#15102E" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M3 14C3 12.9 3.9 12 5 12V14H19V12C20.1 12 21 12.9 21 14V16H3V14Z" stroke="#15102E" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M6 16V18" stroke="#15102E" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M18 16V18" stroke="#15102E" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ZeroStressIcon() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3L4.5 6V12C4.5 16.2 7.8 20.1 12 21C16.2 20.1 19.5 16.2 19.5 12V6L12 3Z" stroke="#15102E" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M8.5 12.5L10.5 14.5L15.5 9.5" stroke="#15102E" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

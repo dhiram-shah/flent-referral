@@ -101,15 +101,30 @@ export default function LoginPage() {
   return (
     <main
       className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ background: 'var(--bg)' }}
+      style={{ background: 'var(--bg)', position: 'relative', overflow: 'hidden' }}
     >
-      <div style={{ width: '100%', maxWidth: 420 }}>
+      {/* Geometric pattern overlay */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: "url('/patterns/pie-factory.svg')",
+          backgroundSize: '60px 60px',
+          backgroundRepeat: 'repeat',
+          opacity: 0.05,
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>
         {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
-            <img src="/logo.png" alt="flent" style={{ height: 26, display: 'block', margin: '0 auto' }} />
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+            <div style={{ background: 'var(--bg)', border: '1.5px solid var(--brand)', borderRadius: 999, padding: '7px 18px', display: 'inline-flex', alignItems: 'center' }}>
+              <img src="/logo.png" alt="flent" style={{ height: 22, display: 'block' }} />
+            </div>
           </Link>
-          <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 6 }}>Referral Program</p>
+          <p style={{ color: 'rgba(21,16,46,0.45)', fontSize: 11, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase' as const, marginTop: 12 }}>Referral Program</p>
         </div>
 
         <div
@@ -117,14 +132,14 @@ export default function LoginPage() {
             background: 'var(--surface)',
             borderRadius: 24,
             padding: '36px 32px',
-            border: '1px solid var(--border)',
-            boxShadow: '0 4px 32px rgba(24,41,61,0.07)',
+            border: '1.5px solid var(--brand)',
+            boxShadow: '4px 4px 0 var(--brand)',
           }}
         >
           {/* ── Step: Email ──────────────────────────────────────────────── */}
           {step === 'email' && (
             <>
-              <h1 className="serif" style={{ fontWeight: 800, fontSize: 26, marginBottom: 4 }}>
+              <h1 className="serif-italic" style={{ fontWeight: 600, fontSize: 28, marginBottom: 4 }}>
                 Welcome back
               </h1>
               <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 28 }}>
@@ -180,7 +195,7 @@ export default function LoginPage() {
                 <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
                   <MailIcon />
                 </div>
-                <h1 className="serif" style={{ fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
+                <h1 className="serif-italic" style={{ fontWeight: 600, fontSize: 24, marginBottom: 8 }}>
                   Check your email
                 </h1>
                 <p style={{ color: 'var(--muted)', fontSize: 14 }}>

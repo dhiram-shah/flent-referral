@@ -76,28 +76,70 @@ body {
   }
 }
 
-/* Hide/show tape column on mobile */
-.timeline-tape-col {
-  display: none;
+/* ── Milestone reward grid ────────────────────────────────────────────── */
+.milestone-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
 }
-@media (min-width: 640px) {
-  .timeline-tape-col {
-    display: block;
-    flex-shrink: 0;
-    width: 36px;
-    position: relative;
-    align-self: stretch;
+@media (max-width: 767px) {
+  .milestone-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ms-track-wrap {
+    display: none;
   }
 }
 
-.timeline-steps-wrapper {
-  display: flex;
-  gap: 0;
-  align-items: flex-start;
+/* Grand prize glow pulse — triggered via el.style.animation in JS */
+@keyframes ms-glow-pulse {
+  0%, 100% { box-shadow: 0 0 48px rgba(245,211,112,0.2), 4px 4px 0 rgba(0,0,0,0.12); }
+  50%       { box-shadow: 0 0 88px rgba(245,211,112,0.55), 4px 4px 0 rgba(0,0,0,0.12); }
 }
-@media (min-width: 640px) {
-  .timeline-steps-wrapper {
-    gap: 52px;
+
+/* ── How It Works — split layout ────────────────────────────────────────── */
+.hiw-step {
+  display: flex;
+  align-items: center;
+  gap: clamp(32px, 5vw, 80px);
+  padding: clamp(40px, 6vw, 72px) 0;
+  opacity: 0;
+  transform: translateY(24px);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hiw-step {
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+}
+.hiw-step.hiw-visible {
+  opacity: 1;
+  transform: none;
+}
+.hiw-step-reverse {
+  flex-direction: row-reverse;
+}
+.hiw-step-num {
+  flex: 0 0 clamp(100px, 18vw, 220px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hiw-step-content {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 639px) {
+  .hiw-step {
+    flex-direction: column !important;
+    gap: 0;
+    padding: 40px 0;
+    align-items: flex-start;
+  }
+  .hiw-step-num {
+    flex: none;
+    width: 100%;
+    justify-content: flex-start;
+    margin-bottom: 8px;
   }
 }
 
@@ -312,20 +354,6 @@ body {
   animation: marquee-right 60s linear infinite;
 }
 
-/* ── Scroll timeline animation ──────────────────────────────────────────── */
-.timeline-step {
-  opacity: 0;
-  transform: translateY(28px);
-}
-@media (prefers-reduced-motion: no-preference) {
-  .timeline-step {
-    transition: opacity 0.55s ease, transform 0.55s ease;
-  }
-}
-.timeline-step.step-visible {
-  opacity: 1;
-  transform: none;
-}
 
 @keyframes pulse-ring {
   0% { box-shadow: 0 0 0 0 rgba(24, 41, 61, 0.35); }

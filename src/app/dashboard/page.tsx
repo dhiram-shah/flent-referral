@@ -24,13 +24,24 @@ interface Referral {
   completedAt?: string
 }
 
+interface RedemptionRecord {
+  id: string
+  milestoneId: string
+  rewardName: string
+  tierNumber: number
+  rewardValue: string | null
+  fulfilledAt: string | null
+  requestedAt: string
+}
+
 interface Progress {
   streakCount: number
   lifetimeCount: number
-  unlockedMilestone: Milestone | null
   nextMilestone: Milestone | null
-  canRedeem: boolean
-  hasPendingRedemption: boolean
+  redeemableMilestones: Milestone[]
+  pendingRedemption: { milestoneId: string; rewardName: string; tierNumber: number } | null
+  redeemedHistory: RedemptionRecord[]
+  totalEarnedValue: number
 }
 
 interface DashboardData {
@@ -39,6 +50,8 @@ interface DashboardData {
   milestones: Milestone[]
   referrals: Referral[]
 }
+
+type MilestoneState = 'locked' | 'eligible' | 'eligible_blocked' | 'pending'
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   INTERESTED: { label: 'Interested', color: '#D97706', bg: '#FEF3C7' },
@@ -50,7 +63,8 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
-  const [showRedeemModal, setShowRedeemModal] = useState(false)
+  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null)
+  const [hoveredMilestoneId, setHoveredMilestoneId] = useState<string | null>(null)
   const [redeemExtra, setRedeemExtra] = useState('')
   const [redeemLoading, setRedeemLoading] = useState(false)
   const [redeemSuccess, setRedeemSuccess] = useState(false)
@@ -87,7 +101,7 @@ export default function DashboardPage() {
   }
 
   async function handleRedeem() {
-    if (!data?.progress.unlockedMilestone) return
+    if (!selectedMilestone) return
     setRedeemLoading(true)
     setError('')
     try {
@@ -95,14 +109,14 @@ export default function DashboardPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          milestoneId: data.progress.unlockedMilestone.id,
+          milestoneId: selectedMilestone.id,
           extraInfo: redeemExtra ? { info: redeemExtra } : undefined,
         }),
       })
       const json = await res.json()
       if (!res.ok) { setError(json.error); return }
       setRedeemSuccess(true)
-      setTimeout(() => { setShowRedeemModal(false); setRedeemSuccess(false); fetchData() }, 2000)
+      setTimeout(() => { setSelectedMilestone(null); setRedeemSuccess(false); setRedeemExtra(''); fetchData() }, 2500)
     } finally {
       setRedeemLoading(false)
     }
@@ -111,6 +125,43 @@ export default function DashboardPage() {
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
     window.location.href = '/'
+  }
+
+  function getMilestoneState(m: Milestone, progress: Progress, streak: number): MilestoneState {
+    if (progress.pendingRedemption?.milestoneId === m.id) return 'pending'
+    if (streak >= m.referralsRequired) {
+      return progress.pendingRedemption ? 'eligible_blocked' : 'eligible'
+    }
+    return 'locked'
+  }
+
+  function getProgressCopy(progress: Progress, streak: number): { text: string; color: string } {
+    if (progress.redeemableMilestones.length > 0) {
+      const n = progress.redeemableMilestones.length
+      return {
+        text: `${n} reward${n > 1 ? 's' : ''} ready to claim — pick one below`,
+        color: '#059669',
+      }
+    }
+    if (progress.pendingRedemption) {
+      return {
+        text: `Your ${progress.pendingRedemption.rewardName} reward is being processed`,
+        color: '#D97706',
+      }
+    }
+    if (progress.nextMilestone) {
+      const needed = progress.nextMilestone.referralsRequired - streak
+      return {
+        text: `${needed} more referral${needed !== 1 ? 's' : ''} to unlock ${progress.nextMilestone.rewardName}`,
+        color: 'var(--muted)',
+      }
+    }
+    return { text: 'You\'ve cleared every milestone — keep referring!', color: 'var(--muted)' }
+  }
+
+  function formatDate(iso: string | null): string {
+    if (!iso) return '—'
+    return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   if (loading) {
@@ -128,16 +179,13 @@ export default function DashboardPage() {
 
   const { referrer, progress, milestones, referrals } = data
   const streak = progress.streakCount
-  const next = progress.nextMilestone
-  const progressPct = next ? Math.min((streak / next.referralsRequired) * 100, 100) : 100
+  const progressCopy = getProgressCopy(progress, streak)
 
   return (
     <main style={{ background: 'var(--bg)', minHeight: '100vh' }}>
 
-      {/* ── Header — mirrors homepage hero aesthetic ─────────────────────────── */}
+      {/* ── Header ─────────────────────────────────────────────────────────────── */}
       <div style={{ position: 'relative', background: 'var(--bg)', borderBottom: '1px solid var(--border)', overflow: 'hidden' }}>
-
-        {/* Geometric pattern — same as landing page */}
         <div
           aria-hidden="true"
           style={{
@@ -160,49 +208,31 @@ export default function DashboardPage() {
               </div>
             </Link>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-              <span style={{ fontSize: 14, color: 'var(--muted)' }}>
-                Hi, {referrer.name.split(' ')[0]}
-              </span>
-              <button
-                onClick={handleLogout}
-                style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              >
+              <span style={{ fontSize: 14, color: 'var(--muted)' }}>Hi, {referrer.name.split(' ')[0]}</span>
+              <button onClick={handleLogout} style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                 Sign out
               </button>
             </div>
           </div>
         </nav>
 
-        {/* Hero content */}
+        {/* Hero — referral code */}
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 700, margin: '0 auto', padding: 'clamp(40px, 6vw, 72px) 24px clamp(48px, 7vw, 80px)', textAlign: 'center' }}>
-
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--brand-light)', color: 'var(--brand)', padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, marginBottom: 28 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', flexShrink: 0 }} />
             Your referral code
           </div>
-
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontFamily: 'var(--font-sans), "Plus Jakarta Sans", sans-serif', fontSize: 13, fontWeight: 600, color: 'var(--muted)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 }}>
               Share with friends moving to Bangalore
             </p>
-            <p
-              className="serif-italic"
-              style={{
-                fontSize: 'clamp(56px, 12vw, 96px)',
-                fontWeight: 500,
-                color: 'var(--brand)',
-                letterSpacing: 6,
-                lineHeight: 1,
-              }}
-            >
+            <p className="serif-italic" style={{ fontSize: 'clamp(56px, 12vw, 96px)', fontWeight: 500, color: 'var(--brand)', letterSpacing: 6, lineHeight: 1 }}>
               {referrer.referralCode}
             </p>
           </div>
-
           <p style={{ color: 'var(--muted)', fontSize: 15, marginBottom: 32, lineHeight: 1.6, maxWidth: 420, margin: '0 auto 32px' }}>
             Friends enter this code when they enquire on Flent — you earn a reward when they move in.
           </p>
-
           <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
             <button onClick={copyCode} className="btn-pastel-violet">
               {copied ? '✓ Copied!' : 'Copy code'}
@@ -214,92 +244,187 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Stats strip ─────────────────────────────────────────────────────── */}
+      {/* ── Stats strip ──────────────────────────────────────────────────────────── */}
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: progress.redeemedHistory.length > 0 ? '1fr 1fr 1fr' : '1fr 1fr' }}>
           <div style={{ padding: '24px 20px', borderRight: '1px solid var(--border)', textAlign: 'center' }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Current streak</p>
             <p className="serif" style={{ fontSize: 52, fontWeight: 700, color: 'var(--brand)', lineHeight: 1 }}>{streak}</p>
           </div>
-          <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+          <div style={{ padding: '24px 20px', borderRight: progress.redeemedHistory.length > 0 ? '1px solid var(--border)' : undefined, textAlign: 'center' }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Lifetime referrals</p>
             <p className="serif" style={{ fontSize: 52, fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>{progress.lifetimeCount}</p>
           </div>
+          {progress.redeemedHistory.length > 0 && (
+            <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Rewards claimed</p>
+              <p className="serif" style={{ fontSize: 52, fontWeight: 700, color: '#059669', lineHeight: 1 }}>{progress.redeemedHistory.length}</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── Content ─────────────────────────────────────────────────────────── */}
+      {/* ── Content ──────────────────────────────────────────────────────────────── */}
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: 'clamp(24px, 4vw, 40px) 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Milestone Roadmap */}
+        {/* ── Reward Journey ───────────────────────────────────────────────────── */}
         <div style={{ background: 'var(--surface)', borderRadius: 20, padding: 24, border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-            <div>
-              <h2 style={{ fontWeight: 700, fontSize: 17, marginBottom: 4 }}>Reward Roadmap</h2>
-              {next ? (
-                <p style={{ color: 'var(--muted)', fontSize: 13 }}>
-                  {next.referralsRequired - streak} more referral{next.referralsRequired - streak !== 1 ? 's' : ''} to unlock <strong>{next.rewardName}</strong>
-                </p>
-              ) : (
-                <p style={{ color: 'var(--success)', fontSize: 13, fontWeight: 600 }}>All milestones cleared — claim your reward below.</p>
-              )}
-            </div>
-            {progress.canRedeem && (
-              <button onClick={() => setShowRedeemModal(true)} className="btn-pastel-violet animate-pulse-ring" style={{ fontSize: 14, padding: '10px 24px' }}>
-                Claim reward
-              </button>
-            )}
-            {progress.hasPendingRedemption && (
-              <div style={{ background: '#FEF3C7', color: '#D97706', padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
-                Reward pending fulfilment
-              </div>
-            )}
+
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>Reward Journey</h2>
+            <p style={{ fontSize: 13, color: progressCopy.color, fontWeight: progress.redeemableMilestones.length > 0 ? 600 : 400 }}>
+              {progressCopy.text}
+            </p>
           </div>
 
-          {next && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>
-                <span>{streak} referrals</span>
-                <span>{next.referralsRequired} needed</span>
-              </div>
-              <div style={{ background: 'var(--bg)', borderRadius: 99, height: 8, overflow: 'hidden' }}>
-                <div style={{ background: 'var(--brand)', height: '100%', width: `${progressPct}%`, borderRadius: 99, transition: 'width 0.6s ease' }} />
-              </div>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
+          {/* Milestone cards */}
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
             {milestones.map((m) => {
-              const isUnlocked = streak >= m.referralsRequired
-              const isCurrent = next?.id === m.id
+              const state = getMilestoneState(m, progress, streak)
+              const isHovered = hoveredMilestoneId === m.id && state === 'eligible'
+
+              const cardStyle: React.CSSProperties = {
+                minWidth: 140,
+                flexShrink: 0,
+                borderRadius: 16,
+                padding: '16px 14px',
+                textAlign: 'center',
+                position: 'relative',
+                transition: 'transform 0.12s ease, box-shadow 0.12s ease',
+                ...(state === 'locked' && {
+                  background: 'var(--bg)',
+                  border: '1px solid var(--border)',
+                  opacity: 0.38,
+                  cursor: 'default',
+                }),
+                ...(state === 'eligible' && {
+                  background: 'var(--brand-light)',
+                  border: '1.5px solid var(--brand)',
+                  boxShadow: isHovered ? '3px 3px 0 var(--brand)' : '2px 2px 0 var(--brand)',
+                  cursor: 'pointer',
+                  transform: isHovered ? 'translate(-1px, -1px)' : 'none',
+                }),
+                ...(state === 'eligible_blocked' && {
+                  background: 'var(--brand-light)',
+                  border: '1px solid rgba(21,16,46,0.18)',
+                  opacity: 0.65,
+                  cursor: 'default',
+                }),
+                ...(state === 'pending' && {
+                  background: '#FEF3C7',
+                  border: '1.5px solid #D97706',
+                  boxShadow: '2px 2px 0 #D97706',
+                  cursor: 'default',
+                }),
+              }
+
               return (
                 <div
                   key={m.id}
-                  style={{
-                    minWidth: 120,
-                    background: isUnlocked ? 'var(--brand-light)' : 'var(--bg)',
-                    border: (isUnlocked || isCurrent) ? '2px solid var(--brand)' : '1px solid var(--border)',
-                    boxShadow: (isUnlocked || isCurrent) ? '2px 2px 0 var(--brand)' : 'none',
-                    borderRadius: 14,
-                    padding: '14px 12px',
-                    textAlign: 'center',
-                    flexShrink: 0,
-                    opacity: (!isUnlocked && !isCurrent) ? 0.5 : 1,
-                  }}
+                  style={cardStyle}
+                  onClick={() => state === 'eligible' ? setSelectedMilestone(m) : undefined}
+                  onMouseEnter={() => state === 'eligible' ? setHoveredMilestoneId(m.id) : undefined}
+                  onMouseLeave={() => setHoveredMilestoneId(null)}
                 >
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
-                    {m.referralsRequired} ref.
+                  {/* Tier label */}
+                  <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(21,16,46,0.35)', textTransform: 'uppercase' as const, letterSpacing: 2, marginBottom: 12, textAlign: 'left' }}>
+                    TIER {m.tierNumber}
                   </div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>{m.rewardName}</div>
-                  {isUnlocked && !isCurrent && <div style={{ fontSize: 10, color: 'var(--success)', marginTop: 6, fontWeight: 700 }}>Unlocked</div>}
-                  {isCurrent && <div style={{ fontSize: 10, color: 'var(--brand)', marginTop: 6, fontWeight: 700 }}>Next up</div>}
+
+                  {/* Big referral count */}
+                  <span className="serif-italic" style={{ fontSize: 42, fontWeight: 700, color: 'var(--brand)', lineHeight: 1, display: 'block' }}>
+                    {m.referralsRequired}
+                  </span>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(21,16,46,0.35)', textTransform: 'uppercase' as const, letterSpacing: 1.5, marginBottom: 12 }}>
+                    {m.referralsRequired === 1 ? 'referral' : 'referrals'}
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ width: 24, height: 1, background: 'rgba(21,16,46,0.1)', margin: '0 auto 12px' }} />
+
+                  {/* Reward name */}
+                  <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--brand)', marginBottom: 4, lineHeight: 1.3 }}>
+                    {m.rewardName}
+                  </div>
+                  {m.rewardValue && (
+                    <div style={{ fontSize: 11, color: 'rgba(21,16,46,0.45)', marginBottom: 12 }}>
+                      ₹{parseInt(m.rewardValue.replace(/[^0-9]/g, '') || '0').toLocaleString('en-IN')}
+                    </div>
+                  )}
+
+                  {/* State badge */}
+                  {state === 'eligible' && (
+                    <div style={{
+                      fontSize: 11, fontWeight: 700,
+                      padding: '4px 10px', borderRadius: 999,
+                      background: isHovered ? 'var(--brand)' : '#D1FAE5',
+                      color: isHovered ? '#fff' : '#059669',
+                      transition: 'background 0.12s, color 0.12s',
+                    }}>
+                      {isHovered ? 'Claim now →' : 'Unlocked'}
+                    </div>
+                  )}
+                  {state === 'eligible_blocked' && (
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(21,16,46,0.45)' }}>
+                      Unlocked
+                    </div>
+                  )}
+                  {state === 'pending' && (
+                    <div style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: '#FEF9C3', color: '#D97706' }}>
+                      Pending
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
+
+          {/* Pending note */}
+          {progress.pendingRedemption && (
+            <p style={{ marginTop: 14, fontSize: 12, color: '#D97706', fontWeight: 600 }}>
+              Your <strong>{progress.pendingRedemption.rewardName}</strong> reward is being fulfilled — we&apos;ll reach out within 7 days. Other unlocked rewards can be claimed once this is complete.
+            </p>
+          )}
+
+          {/* Rewards history */}
+          {progress.redeemedHistory.length > 0 && (
+            <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Rewards history</p>
+                {progress.totalEarnedValue > 0 && (
+                  <div style={{ background: '#D1FAE5', color: '#059669', fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 999 }}>
+                    Total earned · ₹{progress.totalEarnedValue.toLocaleString('en-IN')}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {progress.redeemedHistory.map((r) => (
+                  <div
+                    key={r.id}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)', flexWrap: 'wrap', gap: 6 }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <CheckIcon />
+                      </div>
+                      <div>
+                        <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>{r.rewardName}</p>
+                        <p style={{ fontSize: 11, color: 'var(--muted)' }}>Tier {r.tierNumber} · Fulfilled {formatDate(r.fulfilledAt)}</p>
+                      </div>
+                    </div>
+                    {r.rewardValue && (
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>
+                        ₹{parseInt(r.rewardValue.replace(/[^0-9]/g, '') || '0').toLocaleString('en-IN')}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Referrals List */}
+        {/* ── Referrals List ──────────────────────────────────────────────────── */}
         <div style={{ background: 'var(--surface)', borderRadius: 20, padding: 24, border: '1px solid var(--border)' }}>
           <h2 style={{ fontWeight: 700, fontSize: 17, marginBottom: 4 }}>Your Referrals</h2>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 20 }}>
@@ -313,9 +438,7 @@ export default function DashboardPage() {
               <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 20 }}>
                 Share your code with friends looking for quality co-living in Bangalore.
               </p>
-              <button onClick={shareWhatsApp} className="btn-pastel-peach">
-                Share on WhatsApp
-              </button>
+              <button onClick={shareWhatsApp} className="btn-pastel-peach">Share on WhatsApp</button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -341,37 +464,82 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Redeem Modal ─────────────────────────────────────────────────────── */}
-      {showRedeemModal && progress.unlockedMilestone && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}>
-          <div style={{ background: 'var(--surface)', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+      {/* ── Redeem Modal ──────────────────────────────────────────────────────────── */}
+      {selectedMilestone && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 }}
+          onClick={(e) => { if (e.target === e.currentTarget && !redeemLoading) { setSelectedMilestone(null); setRedeemExtra(''); setError('') } }}
+        >
+          <div style={{ background: 'var(--surface)', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', border: '1.5px solid var(--brand)', boxShadow: '4px 4px 0 var(--brand)' }}>
             {redeemSuccess ? (
-              <div style={{ textAlign: 'center' }}>
-                <h2 style={{ fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Reward claimed!</h2>
-                <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 8 }}>We&apos;ll fulfil your reward within 7 days. Your streak resets — time for round 2!</p>
+              <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <CheckIconLg />
+                </div>
+                <h2 className="serif-italic" style={{ fontWeight: 600, fontSize: 22, marginBottom: 8 }}>Reward claimed!</h2>
+                <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.6 }}>
+                  We&apos;ll fulfil your <strong>{selectedMilestone.rewardName}</strong> within 7 days. Your streak resets — time for round 2!
+                </p>
               </div>
             ) : (
               <>
-                <h2 style={{ fontWeight: 700, fontSize: 20, marginBottom: 4 }}>Claim your reward</h2>
-                <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 20 }}>You&apos;ve unlocked: <strong>{progress.unlockedMilestone.rewardName}</strong></p>
-                {progress.unlockedMilestone.requiresExtraInfo && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(21,16,46,0.38)', textTransform: 'uppercase' as const, letterSpacing: 2, marginBottom: 6 }}>
+                    TIER {selectedMilestone.tierNumber} · {selectedMilestone.referralsRequired} {selectedMilestone.referralsRequired === 1 ? 'referral' : 'referrals'}
+                  </div>
+                  <h2 className="serif-italic" style={{ fontWeight: 600, fontSize: 22, marginBottom: 4 }}>
+                    Claim {selectedMilestone.rewardName}
+                  </h2>
+                  {selectedMilestone.rewardDescription && (
+                    <p style={{ color: 'var(--muted)', fontSize: 14 }}>{selectedMilestone.rewardDescription}</p>
+                  )}
+                  {selectedMilestone.rewardValue && (
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginTop: 4 }}>
+                      Value: ₹{parseInt(selectedMilestone.rewardValue.replace(/[^0-9]/g, '') || '0').toLocaleString('en-IN')}
+                    </p>
+                  )}
+                </div>
+
+                <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#92400E', marginBottom: 20, lineHeight: 1.5 }}>
+                  Claiming resets your streak to 0. You can build it back up and claim again.
+                </div>
+
+                {selectedMilestone.requiresExtraInfo && (
                   <div style={{ marginBottom: 20 }}>
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-                      {progress.unlockedMilestone.extraInfoLabel ?? 'Additional Information'}
+                      {selectedMilestone.extraInfoLabel ?? 'Additional Information'} <span style={{ color: 'var(--danger)' }}>*</span>
                     </label>
                     <textarea
                       value={redeemExtra}
                       onChange={(e) => setRedeemExtra(e.target.value)}
                       rows={3}
                       placeholder="e.g., delivery address"
-                      style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', fontSize: 14, resize: 'vertical' }}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', fontSize: 14, resize: 'vertical', background: 'var(--bg)' }}
                     />
                   </div>
                 )}
-                {error && <div style={{ background: '#FEF2F2', color: 'var(--danger)', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>{error}</div>}
+
+                {error && (
+                  <div style={{ background: '#FEF2F2', color: 'var(--danger)', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>
+                    {error}
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={() => setShowRedeemModal(false)} className="btn-pill-outline" style={{ flex: 1, padding: '12px' }}>Cancel</button>
-                  <button onClick={handleRedeem} disabled={redeemLoading} className="btn-pill" style={{ flex: 2, padding: '12px' }}>
+                  <button
+                    onClick={() => { setSelectedMilestone(null); setRedeemExtra(''); setError('') }}
+                    className="btn-pill-outline"
+                    style={{ flex: 1, padding: '12px' }}
+                    disabled={redeemLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRedeem}
+                    disabled={redeemLoading || (selectedMilestone.requiresExtraInfo && !redeemExtra.trim())}
+                    className="btn-pill"
+                    style={{ flex: 2, padding: '12px' }}
+                  >
                     {redeemLoading ? 'Claiming…' : 'Claim this reward'}
                   </button>
                 </div>
@@ -382,5 +550,21 @@ export default function DashboardPage() {
       )}
 
     </main>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M20 6L9 17L4 12" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CheckIconLg() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M20 6L9 17L4 12" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
