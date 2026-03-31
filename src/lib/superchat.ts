@@ -1,10 +1,9 @@
 /**
  * Superchat WhatsApp API integration.
- * Docs: https://docs.superchat.de
- *
- * Messages are sent using Superchat's template messages via their REST API.
- * Template names must be pre-approved in your Superchat workspace.
+ * Template names are stored in CommTemplate (editable via admin Comms dashboard).
  */
+
+import { getTemplate } from './comms'
 
 const SUPERCHAT_BASE = 'https://api.superchat.de/v1'
 
@@ -21,7 +20,6 @@ async function sendWhatsAppMessage(
     return
   }
 
-  // Normalize Indian phone number to E.164 format
   const normalizedPhone = normalizePhone(phone)
 
   try {
@@ -67,7 +65,10 @@ function normalizePhone(phone: string): string {
   return `+${digits}`
 }
 
-// ─── Typed notification senders ───────────────────────────────────────────────
+async function getTemplateName(key: string, fallback: string): Promise<string> {
+  const tpl = await getTemplate(key)
+  return tpl?.body ?? fallback
+}
 
 export async function sendWelcomeWhatsApp(
   phone: string,
@@ -75,7 +76,7 @@ export async function sendWelcomeWhatsApp(
   referralCode: string,
   dashboardUrl: string
 ): Promise<void> {
-  const template = process.env.SUPERCHAT_TEMPLATE_WELCOME ?? 'flent_referral_welcome'
+  const template = await getTemplateName('wa_template_welcome', 'flent_referral_welcome')
   await sendWhatsAppMessage(phone, template, {
     '1': name.split(' ')[0],
     '2': referralCode,
@@ -88,7 +89,7 @@ export async function sendReferralInterestedWhatsApp(
   referrerName: string,
   refereeName: string
 ): Promise<void> {
-  const template = process.env.SUPERCHAT_TEMPLATE_INTERESTED ?? 'flent_referral_interested'
+  const template = await getTemplateName('wa_template_interested', 'flent_referral_interested')
   await sendWhatsAppMessage(phone, template, {
     '1': referrerName.split(' ')[0],
     '2': refereeName,
@@ -100,7 +101,7 @@ export async function sendReferralSignedWhatsApp(
   referrerName: string,
   refereeName: string
 ): Promise<void> {
-  const template = process.env.SUPERCHAT_TEMPLATE_SIGNED ?? 'flent_referral_signed'
+  const template = await getTemplateName('wa_template_signed', 'flent_referral_signed')
   await sendWhatsAppMessage(phone, template, {
     '1': referrerName.split(' ')[0],
     '2': refereeName,
@@ -113,7 +114,7 @@ export async function sendMilestoneUnlockedWhatsApp(
   rewardName: string,
   dashboardUrl: string
 ): Promise<void> {
-  const template = process.env.SUPERCHAT_TEMPLATE_COMPLETED ?? 'flent_milestone_unlocked'
+  const template = await getTemplateName('wa_template_completed', 'flent_milestone_unlocked')
   await sendWhatsAppMessage(phone, template, {
     '1': referrerName.split(' ')[0],
     '2': rewardName,
@@ -126,7 +127,7 @@ export async function sendRedemptionFulfilledWhatsApp(
   referrerName: string,
   rewardName: string
 ): Promise<void> {
-  const template = process.env.SUPERCHAT_TEMPLATE_REDEEMED ?? 'flent_reward_fulfilled'
+  const template = await getTemplateName('wa_template_redeemed', 'flent_reward_fulfilled')
   await sendWhatsAppMessage(phone, template, {
     '1': referrerName.split(' ')[0],
     '2': rewardName,

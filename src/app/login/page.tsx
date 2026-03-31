@@ -175,7 +175,7 @@ export default function LoginPage() {
                     )}
                   </div>
                 )}
-                <button type="submit" disabled={loading} className="btn-pastel-violet" style={{ width: '100%', marginTop: 4 }}>
+                <button type="submit" disabled={loading} className="btn-base btn-pastel-violet" style={{ width: '100%', marginTop: 4 }}>
                   {loading ? 'Sending code…' : 'Send sign-in code →'}
                 </button>
               </form>
@@ -232,7 +232,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading || otp.length < 6}
-                  className="btn-pastel-violet"
+                  className="btn-base btn-pastel-violet"
                   style={{ width: '100%' }}
                 >
                   {loading ? 'Signing in…' : 'Sign in →'}
@@ -240,7 +240,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { setStep('email'); setOtp(''); setError('') }}
-                  className="btn-pastel-peach"
+                  className="btn-base btn-pastel-peach"
                   style={{ width: '100%', padding: '10px 20px', fontSize: 13 }}
                 >
                   ← Use a different email

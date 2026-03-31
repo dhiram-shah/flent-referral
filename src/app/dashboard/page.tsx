@@ -45,6 +45,7 @@ interface Progress {
 }
 
 interface DashboardData {
+  waShareText: string
   referrer: { id: string; name: string; email: string; phone: string; referralCode: string; isTenant: boolean }
   progress: Progress
   milestones: Milestone[]
@@ -94,10 +95,7 @@ export default function DashboardPage() {
 
   function shareWhatsApp() {
     if (!data) return
-    const msg = encodeURIComponent(
-      `Hey! I've been using Flent for my Bangalore accommodation and it's been great. Check them out and use my referral code *${data.referrer.referralCode}* when you enquire. They've got amazing co-living spaces! 🏠 https://flent.in`
-    )
-    window.open(`https://wa.me/?text=${msg}`, '_blank')
+    window.open(`https://wa.me/?text=${encodeURIComponent(data.waShareText)}`, '_blank')
   }
 
   async function handleRedeem() {
@@ -265,13 +263,13 @@ export default function DashboardPage() {
             >
               {referrer.referralCode}
             </span>
-            <button onClick={copyCode} className="btn-pastel-violet" style={{ flexShrink: 0, fontSize: 13, padding: '9px 18px' }}>
+            <button onClick={copyCode} className="btn-base btn-pastel-violet" style={{ flexShrink: 0, fontSize: 13, padding: '9px 18px' }}>
               {copied ? '✓ Copied' : 'Copy code'}
             </button>
           </div>
 
           {/* WhatsApp share */}
-          <button onClick={shareWhatsApp} className="btn-pastel-peach" style={{ width: '100%', padding: '13px 24px', fontSize: 15 }}>
+          <button onClick={shareWhatsApp} className="btn-base btn-pastel-peach" style={{ width: '100%', padding: '13px 24px', fontSize: 15 }}>
             Share on WhatsApp
           </button>
         </div>
@@ -471,7 +469,7 @@ export default function DashboardPage() {
               <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 20 }}>
                 Share your code with friends looking for quality co-living in Bangalore.
               </p>
-              <button onClick={shareWhatsApp} className="btn-pastel-peach">Share on WhatsApp</button>
+              <button onClick={shareWhatsApp} className="btn-base btn-pastel-peach">Share on WhatsApp</button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -561,7 +559,7 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button
                     onClick={() => { setSelectedMilestone(null); setRedeemExtra(''); setError('') }}
-                    className="btn-pill-outline"
+                    className="btn-base btn-pill-outline"
                     style={{ flex: 1, padding: '12px' }}
                     disabled={redeemLoading}
                   >
@@ -570,7 +568,7 @@ export default function DashboardPage() {
                   <button
                     onClick={handleRedeem}
                     disabled={redeemLoading || (selectedMilestone.requiresExtraInfo && !redeemExtra.trim())}
-                    className="btn-pill"
+                    className="btn-base btn-pill"
                     style={{ flex: 2, padding: '12px' }}
                   >
                     {redeemLoading ? 'Claiming…' : 'Claim this reward'}

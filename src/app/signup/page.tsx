@@ -201,7 +201,7 @@ export default function SignupPage() {
                   />
                 </Field>
                 {error && <ErrorMsg>{error}</ErrorMsg>}
-                <button type="submit" disabled={loading} className="btn-pastel-violet" style={{ width: '100%', marginTop: 4 }}>
+                <button type="submit" disabled={loading} className="btn-base btn-pastel-violet" style={{ width: '100%', marginTop: 4 }}>
                   {loading ? 'Sending OTP…' : 'Get my referral code →'}
                 </button>
               </form>
@@ -261,7 +261,7 @@ export default function SignupPage() {
                 <button
                   type="submit"
                   disabled={loading || otp.length < 6}
-                  className="btn-pastel-violet"
+                  className="btn-base btn-pastel-violet"
                   style={{ width: '100%' }}
                 >
                   {loading ? 'Verifying…' : 'Verify & get my code'}
@@ -269,7 +269,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setStep('form')}
-                  className="btn-pastel-peach"
+                  className="btn-base btn-pastel-peach"
                   style={{ width: '100%', padding: '12px 20px', fontSize: 13 }}
                 >
                   ← Back
@@ -337,13 +337,13 @@ export default function SignupPage() {
                 </p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <button onClick={copyCode} className="btn-pastel-violet" style={{ width: '100%' }}>
+                <button onClick={copyCode} className="btn-base btn-pastel-violet" style={{ width: '100%' }}>
                   {copied ? <><CopyCheckIcon /> Copied!</> : 'Copy code'}
                 </button>
                 {/* Full-page navigation ensures proxy.ts reads the fresh cookie */}
                 <a
                   href="/dashboard"
-                  className="btn-pastel-peach"
+                  className="btn-base btn-pastel-peach"
                   style={{ width: '100%', justifyContent: 'center' }}
                 >
                   Go to my dashboard →

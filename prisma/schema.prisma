@@ -160,3 +160,14 @@ model NotificationLog {
 
   @@index([referrerId])
 }
+
+model CommTemplate {
+  key       String   @id
+  label     String
+  channel   String
+  subject   String?
+  body      String
+  variables Json     @default("[]")
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}

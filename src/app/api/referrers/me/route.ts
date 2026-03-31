@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { verifyReferrerToken, COOKIE_NAMES } from '@/lib/auth'
+import { getTemplate, renderTemplate } from '@/lib/comms'
 
 // GET /api/referrers/me — returns full profile + milestone context
 export async function GET(_req: NextRequest) {
@@ -15,6 +16,7 @@ export async function GET(_req: NextRequest) {
       { id: 'ms5', tierNumber: 5, referralsRequired: 12, rewardName: 'iPhone 16', rewardDescription: 'Grand prize — all yours', rewardValue: '80000', requiresExtraInfo: false },
     ]
     return Response.json({
+      waShareText: `Hey! I've been using Flent for my Bangalore accommodation and it's been great. Check them out and use my referral code *DEV123* when you enquire. They've got amazing co-living spaces! 🏠 https://flent.in`,
       referrer: { id: 'dev', name: 'Dev User', email: 'dev@flent.in', phone: '9999999999', referralCode: 'DEV123', isTenant: true },
       progress: {
         streakCount: 3,
@@ -43,7 +45,7 @@ export async function GET(_req: NextRequest) {
   const payload = verifyReferrerToken(token)
   if (!payload) return Response.json({ error: 'Invalid session' }, { status: 401 })
 
-  const [referrer, milestones, allRedemptions] = await Promise.all([
+  const [referrer, milestones, allRedemptions, waShareTpl] = await Promise.all([
     prisma.referrer.findUnique({
       where: { id: payload.sub },
       include: {
@@ -79,9 +81,15 @@ export async function GET(_req: NextRequest) {
         milestone: { select: { rewardName: true, tierNumber: true, rewardValue: true } },
       },
     }),
+    getTemplate('ui_wa_share_text'),
   ])
 
   if (!referrer) return Response.json({ error: 'Not found' }, { status: 404 })
+
+  const waShareText = renderTemplate(
+    waShareTpl?.body ?? `Hey! Use my referral code *{{referralCode}}* on Flent. 🏠 https://flent.in`,
+    { referralCode: referrer.referralCode }
+  )
 
   const streakCount = referrer.progress?.currentStreakCount ?? 0
   const pendingRaw = allRedemptions.find(r => r.status === 'PENDING')
@@ -117,6 +125,7 @@ export async function GET(_req: NextRequest) {
   }, 0)
 
   return Response.json({
+    waShareText,
     referrer: {
       id: referrer.id,
       name: referrer.name,

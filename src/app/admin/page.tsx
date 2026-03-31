@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import CommsTab from './components/CommsTab'
 
-type Tab = 'overview' | 'referrers' | 'redemptions' | 'milestones'
+type Tab = 'overview' | 'referrers' | 'redemptions' | 'milestones' | 'comms'
 
 interface Stats {
   totalReferrers: number
@@ -183,26 +184,29 @@ export default function AdminDashboard() {
   return (
     <main style={{ background: 'var(--bg)', minHeight: '100vh' }}>
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
-      <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 50 }}>
+      <nav style={{ background: 'var(--bg)', borderBottom: '1.5px solid var(--brand)', position: 'sticky', top: 0, zIndex: 50 }}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span style={{ color: 'var(--brand)', fontWeight: 800, fontSize: 22 }}>flent</span>
-            <span style={{ background: 'var(--brand-light)', color: 'var(--brand)', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Admin</span>
+            <div style={{ background: 'var(--bg)', border: '1.5px solid var(--brand)', borderRadius: 999, padding: '6px 16px', display: 'inline-flex', alignItems: 'center' }}>
+              <img src="/assets/flent-logo.png" alt="Flent" style={{ height: 20, display: 'block' }} />
+            </div>
+            <span style={{ background: 'var(--pastel-violet)', color: 'var(--brand)', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, textTransform: 'uppercase' as const, letterSpacing: 1, border: '1px solid var(--brand)' }}>Admin</span>
           </div>
-          <button onClick={handleLogout} style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Sign out</button>
+          <button onClick={handleLogout} className="btn-base btn-pastel-peach" style={{ padding: '7px 16px', fontSize: 13 }}>Sign out</button>
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* ── Tabs ─────────────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: 'var(--surface)', padding: 4, borderRadius: 12, border: '1px solid var(--border)', width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: 'var(--surface)', padding: 4, borderRadius: 999, border: '1.5px solid var(--brand)', width: 'fit-content', boxShadow: '2px 2px 0 var(--brand)' }}>
           {([
             { id: 'overview', label: 'Overview' },
             { id: 'referrers', label: `Referrers${referrers.length ? ` (${referrers.length})` : ''}` },
             { id: 'redemptions', label: `Redemptions${redemptions.filter(r => r.status === 'PENDING').length ? ` 🔴 ${redemptions.filter(r => r.status === 'PENDING').length}` : ''}` },
             { id: 'milestones', label: 'Milestones' },
+            { id: 'comms', label: 'Comms' },
           ] as const).map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer', background: tab === t.id ? 'var(--brand)' : 'transparent', color: tab === t.id ? '#fff' : 'var(--muted)', transition: 'all 0.15s' }}>
+            <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '8px 18px', borderRadius: 999, border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer', background: tab === t.id ? 'var(--brand)' : 'transparent', color: tab === t.id ? '#fff' : 'var(--muted)', transition: 'all 0.15s' }}>
               {t.label}
             </button>
           ))}
@@ -218,7 +222,7 @@ export default function AdminDashboard() {
                 { label: 'Pending Rewards', value: stats.pendingRedemptions, sub: 'need action', alert: stats.pendingRedemptions > 0 },
                 { label: 'New This Month', value: stats.recentSignups, sub: 'referrers signed up' },
               ].map((s) => (
-                <div key={s.label} style={{ background: 'var(--surface)', borderRadius: 16, padding: 20, border: s.alert ? '2px solid var(--danger)' : '1px solid var(--border)' }}>
+                <div key={s.label} style={{ background: 'var(--surface)', borderRadius: 16, padding: 20, border: s.alert ? '1.5px solid var(--danger)' : '1.5px solid var(--brand)', boxShadow: s.alert ? '2px 2px 0 var(--danger)' : '2px 2px 0 var(--brand)' }}>
                   <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</p>
                   <p style={{ fontSize: 32, fontWeight: 800, color: s.alert ? 'var(--danger)' : 'var(--brand)' }}>{s.value}</p>
                   <p style={{ fontSize: 12, color: 'var(--muted)' }}>{s.sub}</p>
@@ -227,7 +231,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 20, border: '1px solid var(--border)' }}>
+              <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 20, border: '1.5px solid var(--brand)', boxShadow: '2px 2px 0 var(--brand)' }}>
                 <h3 style={{ fontWeight: 700, marginBottom: 16 }}>Referral Funnel</h3>
                 {[
                   { label: 'Interested', count: stats.referralsByStatus?.INTERESTED ?? 0, color: '#F59E0B' },
@@ -243,13 +247,13 @@ export default function AdminDashboard() {
                 ))}
               </div>
 
-              <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 20, border: '1px solid var(--border)' }}>
+              <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 20, border: '1.5px solid var(--brand)', boxShadow: '2px 2px 0 var(--brand)' }}>
                 <h3 style={{ fontWeight: 700, marginBottom: 16 }}>Pending Redemptions</h3>
                 {redemptions.filter(r => r.status === 'PENDING').length === 0 ? (
                   <p style={{ color: 'var(--muted)', fontSize: 14 }}>No pending redemptions 🎉</p>
                 ) : (
                   redemptions.filter(r => r.status === 'PENDING').slice(0, 3).map((r) => (
-                    <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '10px 12px', background: '#FEF3C7', borderRadius: 10 }}>
+                    <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '10px 12px', background: 'var(--pastel-yellow)', borderRadius: 10, border: '1px solid var(--brand)' }}>
                       <div>
                         <p style={{ fontWeight: 600, fontSize: 13 }}>{r.referrer.name}</p>
                         <p style={{ fontSize: 12, color: 'var(--muted)' }}>{r.milestone.rewardName}</p>
@@ -269,7 +273,7 @@ export default function AdminDashboard() {
             <div style={{ marginBottom: 16 }}>
               <input type="text" placeholder="Search by name, email, phone, or code…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', maxWidth: 400, padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', fontSize: 14, background: 'var(--surface)' }} />
             </div>
-            <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1.5px solid var(--brand)', boxShadow: '2px 2px 0 var(--brand)', overflow: 'hidden' }}>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
@@ -304,11 +308,11 @@ export default function AdminDashboard() {
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <button onClick={() => toggleReferrer(r.id, 'isActive', !r.isActive)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}>
+                            <button onClick={() => toggleReferrer(r.id, 'isActive', !r.isActive)} className="btn-base btn-pastel-peach" style={{ fontSize: 12, padding: '5px 12px' }}>
                               {r.isActive ? 'Disable' : 'Enable'}
                             </button>
                             {!r.isDisqualified && (
-                              <button onClick={() => { const note = prompt('Reason for disqualification?'); if (note) toggleReferrer(r.id, 'isDisqualified', true, note) }} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--danger)', color: 'var(--danger)', background: 'var(--surface)', cursor: 'pointer' }}>
+                              <button onClick={() => { const note = prompt('Reason for disqualification?'); if (note) toggleReferrer(r.id, 'isDisqualified', true, note) }} className="btn-base btn-pastel-peach" style={{ fontSize: 12, padding: '5px 12px', background: 'var(--pastel-red)', borderColor: 'var(--danger)', color: 'var(--danger)', boxShadow: 'var(--danger) -2px 2px 0px' }}>
                                 Disqualify
                               </button>
                             )}
@@ -329,7 +333,7 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {redemptions.length === 0 && <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 40 }}>No pending redemptions</p>}
             {redemptions.map((r) => (
-              <div key={r.id} style={{ background: 'var(--surface)', borderRadius: 16, padding: 20, border: r.status === 'PENDING' ? '1px solid #FCD34D' : '1px solid var(--border)' }}>
+              <div key={r.id} style={{ background: 'var(--surface)', borderRadius: 16, padding: 20, border: '1.5px solid var(--brand)', boxShadow: r.status === 'PENDING' ? '2px 2px 0 var(--brand)' : 'none' }}>
                 <div className="flex flex-wrap justify-between gap-4">
                   <div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
@@ -351,10 +355,10 @@ export default function AdminDashboard() {
                   {r.status === 'PENDING' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 200 }}>
                       <input placeholder="Notes (optional)" value={fulfillNote} onChange={(e) => setFulfillNote(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13 }} />
-                      <button onClick={() => fulfillRedemption(r.id, 'FULFILLED')} disabled={fulfillLoading === r.id} style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: 'var(--success)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                      <button onClick={() => fulfillRedemption(r.id, 'FULFILLED')} disabled={fulfillLoading === r.id} className="btn-base btn-pastel-violet" style={{ padding: '10px 16px', fontSize: 13, background: 'var(--pastel-green)', borderColor: 'var(--success)', color: 'var(--success)', boxShadow: 'var(--success) -2px 2px 0px' }}>
                         ✓ Mark Fulfilled
                       </button>
-                      <button onClick={() => fulfillRedemption(r.id, 'REJECTED')} disabled={fulfillLoading === r.id} style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid var(--danger)', color: 'var(--danger)', background: 'var(--surface)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                      <button onClick={() => fulfillRedemption(r.id, 'REJECTED')} disabled={fulfillLoading === r.id} className="btn-base btn-pastel-peach" style={{ padding: '10px 16px', fontSize: 13, background: 'var(--pastel-red)', borderColor: 'var(--danger)', color: 'var(--danger)', boxShadow: 'var(--danger) -2px 2px 0px' }}>
                         Reject
                       </button>
                     </div>
@@ -373,7 +377,7 @@ export default function AdminDashboard() {
               <h3 style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Active Milestones</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {milestones.map((m) => (
-                  <div key={m.id} style={{ background: 'var(--surface)', borderRadius: 12, padding: '14px 16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={m.id} style={{ background: 'var(--surface)', borderRadius: 14, padding: '14px 16px', border: '1.5px solid var(--brand)', boxShadow: '2px 2px 0 var(--brand)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
                         <span style={{ background: 'var(--brand-light)', color: 'var(--brand)', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>Tier {m.tierNumber}</span>
@@ -383,8 +387,8 @@ export default function AdminDashboard() {
                       <p style={{ fontSize: 12, color: 'var(--muted)' }}>{m.referralsRequired} referrals required{m.rewardValue ? ` · ${m.rewardValue}` : ''}</p>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => editMilestone(m)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}>Edit</button>
-                      <button onClick={() => deleteMilestone(m.id)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--danger)', color: 'var(--danger)', background: 'var(--surface)', cursor: 'pointer' }}>Delete</button>
+                      <button onClick={() => editMilestone(m)} className="btn-base btn-pastel-violet" style={{ fontSize: 12, padding: '5px 12px' }}>Edit</button>
+                      <button onClick={() => deleteMilestone(m.id)} className="btn-base btn-pastel-peach" style={{ fontSize: 12, padding: '5px 12px', background: 'var(--pastel-red)', borderColor: 'var(--danger)', color: 'var(--danger)', boxShadow: 'var(--danger) -2px 2px 0px' }}>Delete</button>
                     </div>
                   </div>
                 ))}
@@ -395,7 +399,7 @@ export default function AdminDashboard() {
             {/* Form */}
             <div>
               <h3 style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>{editingMilestone ? 'Edit Milestone' : 'Add Milestone'}</h3>
-              <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 20, border: '1.5px solid var(--brand)', boxShadow: '2px 2px 0 var(--brand)', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
                   { label: 'Tier Number', key: 'tierNumber', type: 'number', placeholder: '1' },
                   { label: 'Referrals Required', key: 'referralsRequired', type: 'number', placeholder: '3' },
@@ -426,9 +430,9 @@ export default function AdminDashboard() {
                 </label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {editingMilestone && (
-                    <button onClick={() => { setEditingMilestone(null); setMilestoneForm({ tierNumber: '', referralsRequired: '', rewardName: '', rewardDescription: '', rewardValue: '', requiresExtraInfo: false, extraInfoLabel: '', isActive: true }) }} style={{ padding: '10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', fontWeight: 600, fontSize: 13, cursor: 'pointer', flex: 1 }}>Cancel</button>
+                    <button onClick={() => { setEditingMilestone(null); setMilestoneForm({ tierNumber: '', referralsRequired: '', rewardName: '', rewardDescription: '', rewardValue: '', requiresExtraInfo: false, extraInfoLabel: '', isActive: true }) }} className="btn-base btn-pastel-peach" style={{ padding: '10px', fontSize: 13, flex: 1 }}>Cancel</button>
                   )}
-                  <button onClick={saveMilestone} disabled={milestoneLoading || !milestoneForm.rewardName || !milestoneForm.referralsRequired} style={{ padding: '10px', borderRadius: 8, border: 'none', background: 'var(--brand)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', flex: 2 }}>
+                  <button onClick={saveMilestone} disabled={milestoneLoading || !milestoneForm.rewardName || !milestoneForm.referralsRequired} className="btn-base btn-pill" style={{ padding: '10px', fontSize: 13, flex: 2 }}>
                     {milestoneLoading ? 'Saving…' : editingMilestone ? 'Update Milestone' : 'Add Milestone'}
                   </button>
                 </div>
@@ -437,6 +441,9 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+        {/* ── Comms ────────────────────────────────────────────────────────── */}
+        {tab === 'comms' && <CommsTab />}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </main>
