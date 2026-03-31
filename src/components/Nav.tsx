@@ -21,8 +21,8 @@ export default function Nav() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.35, delay: 0.1, ease: [0.25, 1, 0.5, 1] }}
         >
-          <button className="btn-base btn-pastel-peach">Sign in</button>
-          <button className="btn-base btn-pastel-violet">Join — it&apos;s free</button>
+          <button className="btn-base btn-pastel-peach" onClick={() => { window.location.href = '/login'; }}>Sign in</button>
+          <button className="btn-base btn-pastel-violet" onClick={() => { window.location.href = '/signup'; }}>Join — it&apos;s free</button>
         </motion.div>
       </nav>
     </div>

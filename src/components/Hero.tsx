@@ -55,11 +55,12 @@ export default function Hero() {
             className="btn-base btn-pill"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
+            onClick={() => { window.location.href = '/signup'; }}
           >
             Get my referral code →
           </motion.button>
           <p className="hero-cta-sub">
-            Already a member? <a href="#">Track your progress →</a>
+            Already a member? <a href="/login">Track your progress →</a>
           </p>
         </motion.div>
 

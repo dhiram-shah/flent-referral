@@ -33,10 +33,10 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 - `DATABASE_URL` = Supabase Session Pooler with IPv4 (port 5432, NOT 6543 transaction pooler)
 
 ## Recent Changes
-- **Dashboard milestone section** (`dashboard/page.tsx`): 4-state cards (locked/eligible/eligible_blocked/pending), hover-to-reveal "Claim now →", any eligible tier claimable independently, history strip with total earned value, 3rd stat col (rewards claimed)
-- **`/api/referrers/me`**: now returns `redeemableMilestones[]`, `pendingRedemption`, `redeemedHistory[]`, `totalEarnedValue`; dev bypass returns rich stub data with sample milestones/referrals
-- **MilestoneRoadmap** (`src/components/ui/MilestoneRoadmap.tsx`): dark navy section, pastel cards, ghost watermark icons (88×88 SVG, opacity 0.08), scroll-triggered cascade (inline `el.style.*`) + gold glow pulse
-- **Auth pages** (`signup/`, `login/`): pie-factory overlay, logo pill, `serif-italic` headings, neo-brutalist card, cream referral code display, SVG checkmark
+- **Dashboard hero** (`dashboard/page.tsx`): referral code now in neo-brutalist box with inline Copy button — `white-space: nowrap` + `clamp(18px,3vw,28px)` guarantees single line; copy flow inverted (description → code → share); added `WORKFLOW.md`
+- **Dashboard milestone section**: 4-state cards (locked/eligible/eligible_blocked/pending), hover "Claim now →", any eligible tier claimable, history strip + total earned value, 3rd stat col
+- **`/api/referrers/me`**: returns `redeemableMilestones[]`, `pendingRedemption`, `redeemedHistory[]`, `totalEarnedValue`; dev bypass with rich stub (no auth/DB needed locally)
+- **MilestoneRoadmap** (`src/components/ui/MilestoneRoadmap.tsx`): scroll-triggered cascade, ghost watermark icons, gold glow pulse (inline `el.style.*` — Turbopack safe)
 
 ## Decisions & Patterns
 - Resend lazily initialized — never instantiate at module level; always fire via `after()` in route handlers

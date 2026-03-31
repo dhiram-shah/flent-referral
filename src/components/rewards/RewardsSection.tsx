@@ -101,7 +101,7 @@ export default function RewardsSection() {
 
   const handleClaim = useCallback(() => {
     closePopup();
-    document.querySelector('.footer-mega')?.scrollIntoView({ behavior: 'smooth' });
+    window.location.href = '/signup';
   }, [closePopup]);
 
   return (

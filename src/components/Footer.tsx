@@ -192,14 +192,14 @@ export default function Footer() {
         <ScrollReveal delay={0.48}>
           <div className="cta-buttons">
             <motion.a
-              href="#"
+              href="/signup"
               className="btn-base btn-pill-dark"
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
             >
               Get my referral code — it&apos;s free
             </motion.a>
-            <span className="cta-signin">Already a member? Sign in →</span>
+            <a href="/login" className="cta-signin">Already a member? Sign in →</a>
           </div>
         </ScrollReveal>
       </div>
@@ -216,9 +216,9 @@ export default function Footer() {
       >
         <p className="footer-copy">&copy; 2026 Flent. All rights reserved.</p>
         <div className="footer-links">
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms of Service</a>
-          <a href="#">Contact</a>
+          <a href="https://www.flent.in/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+          <a href="https://www.flent.in/terms-of-use" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+          <a href="mailto:sales@flent.in">Contact</a>
         </div>
       </motion.div>
     </footer>
