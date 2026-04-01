@@ -44,12 +44,34 @@ interface Progress {
   totalEarnedValue: number
 }
 
+interface LeaderboardEntry {
+  rank: number
+  referrerId: string
+  displayName: string | null
+  quarterlyCount: number
+  tierName: string | null
+  tierColorToken: string | null
+}
+
+interface LeaderboardData {
+  ambassadorTier: { name: string; colorToken: string } | null
+  leaderboardOptIn: boolean
+  quarterly: {
+    rank: number | null
+    total: number
+    quarterlyCount: number
+    quarter: string
+    resetsOn: string
+  }
+}
+
 interface DashboardData {
   waShareText: string
   referrer: { id: string; name: string; email: string; phone: string; referralCode: string; isTenant: boolean }
   progress: Progress
   milestones: Milestone[]
   referrals: Referral[]
+  leaderboard?: LeaderboardData
 }
 
 type MilestoneState = 'locked' | 'eligible' | 'eligible_blocked' | 'pending'
@@ -70,13 +92,24 @@ export default function DashboardPage() {
   const [redeemLoading, setRedeemLoading] = useState(false)
   const [redeemSuccess, setRedeemSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([])
+  const [leaderboardMeta, setLeaderboardMeta] = useState<{ quarter: string; totalParticipants: number } | null>(null)
+  const [optInLoading, setOptInLoading] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/referrers/me')
-      if (res.status === 401) { window.location.href = '/signup'; return }
-      const json = await res.json()
+      const [meRes, lbRes] = await Promise.all([
+        fetch('/api/referrers/me'),
+        fetch('/api/leaderboard'),
+      ])
+      if (meRes.status === 401) { window.location.href = '/signup'; return }
+      const json = await meRes.json()
       setData(json)
+      if (lbRes.ok) {
+        const lbJson = await lbRes.json()
+        setLeaderboardEntries(lbJson.entries ?? [])
+        setLeaderboardMeta({ quarter: lbJson.quarter, totalParticipants: lbJson.totalParticipants })
+      }
     } catch {
       setError('Failed to load dashboard')
     } finally {
@@ -117,6 +150,27 @@ export default function DashboardPage() {
       setTimeout(() => { setSelectedMilestone(null); setRedeemSuccess(false); setRedeemExtra(''); fetchData() }, 2500)
     } finally {
       setRedeemLoading(false)
+    }
+  }
+
+  async function handleOptIn(value: boolean) {
+    if (!data) return
+    setOptInLoading(true)
+    try {
+      await fetch('/api/referrers/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leaderboardOptIn: value }),
+      })
+      setData((d) => d ? { ...d, leaderboard: d.leaderboard ? { ...d.leaderboard, leaderboardOptIn: value } : d.leaderboard } : d)
+      // Refresh leaderboard list
+      const lbRes = await fetch('/api/leaderboard')
+      if (lbRes.ok) {
+        const lbJson = await lbRes.json()
+        setLeaderboardEntries(lbJson.entries ?? [])
+      }
+    } finally {
+      setOptInLoading(false)
     }
   }
 
@@ -217,10 +271,26 @@ export default function DashboardPage() {
         {/* Hero — referral code */}
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 560, margin: '0 auto', padding: 'clamp(36px, 5vw, 60px) 24px clamp(44px, 6vw, 68px)', textAlign: 'center' }}>
 
-          {/* Badge */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--brand-light)', color: 'var(--brand)', padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, marginBottom: 20 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', flexShrink: 0 }} />
-            Referral Program
+          {/* Badge row */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 20 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--brand-light)', color: 'var(--brand)', padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', flexShrink: 0 }} />
+              Referral Program
+            </div>
+            {data.leaderboard?.ambassadorTier && (() => {
+              const tierColorMap: Record<string, { color: string; bg: string }> = {
+                info:    { color: 'var(--info)',    bg: 'var(--info-light)' },
+                success: { color: 'var(--success)', bg: 'var(--success-light)' },
+                brand:   { color: 'var(--brand)',   bg: 'var(--pastel-violet)' },
+                warning: { color: '#D97706',        bg: '#FEF3C7' },
+              }
+              const tc = tierColorMap[data.leaderboard.ambassadorTier.colorToken] ?? tierColorMap.brand
+              return (
+                <div style={{ display: 'inline-flex', alignItems: 'center', background: tc.bg, color: tc.color, padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, border: `1px solid ${tc.color}` }}>
+                  {data.leaderboard.ambassadorTier.name}
+                </div>
+              )
+            })()}
           </div>
 
           {/* Headline */}
@@ -297,6 +367,105 @@ export default function DashboardPage() {
 
       {/* ── Content ──────────────────────────────────────────────────────────────── */}
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: 'clamp(24px, 4vw, 40px) 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* ── Quarterly Standing ──────────────────────────────────────────────── */}
+        {data.leaderboard && (
+          <div style={{ background: 'var(--surface)', borderRadius: 20, padding: 24, border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <h2 style={{ fontWeight: 700, fontSize: 17, marginBottom: 4 }}>Quarterly Standing</h2>
+                <p style={{ fontSize: 13, color: 'var(--muted)' }}>
+                  {leaderboardMeta?.quarter ?? data.leaderboard.quarterly.quarter} · resets {new Date(data.leaderboard.quarterly.resetsOn).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                </p>
+              </div>
+              {data.leaderboard.quarterly.rank && (
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--brand)', lineHeight: 1 }}>
+                    #{data.leaderboard.quarterly.rank}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--muted)' }}>
+                    of {leaderboardMeta?.totalParticipants ?? data.leaderboard.quarterly.total} referrers · {data.leaderboard.quarterly.quarterlyCount} this quarter
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Leaderboard list */}
+            {leaderboardEntries.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+                {leaderboardEntries.slice(0, 5).map((entry) => {
+                  const isYou = entry.referrerId === referrer.id
+                  const tierColorMap: Record<string, { color: string; bg: string }> = {
+                    info:    { color: 'var(--info)',    bg: 'var(--info-light)' },
+                    success: { color: 'var(--success)', bg: 'var(--success-light)' },
+                    brand:   { color: 'var(--brand)',   bg: 'var(--pastel-violet)' },
+                    warning: { color: '#D97706',        bg: '#FEF3C7' },
+                  }
+                  const tc = entry.tierColorToken ? tierColorMap[entry.tierColorToken] : null
+                  return (
+                    <div
+                      key={entry.referrerId}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '10px 14px', borderRadius: 10,
+                        background: isYou ? 'var(--brand-light)' : 'var(--bg)',
+                        border: isYou ? '1.5px solid var(--brand)' : '1px solid var(--border)',
+                      }}
+                    >
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)', minWidth: 24, textAlign: 'right' }}>
+                        #{entry.rank}
+                      </span>
+                      <span style={{ flex: 1, fontSize: 14, fontWeight: isYou ? 700 : 500, color: 'var(--text)' }}>
+                        {entry.displayName ?? 'Anonymous'}{isYou ? ' (you)' : ''}
+                      </span>
+                      {entry.tierName && tc && (
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: tc.bg, color: tc.color, textTransform: 'uppercase', letterSpacing: 1 }}>
+                          {entry.tierName}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 20, textAlign: 'right' }}>
+                        {entry.quarterlyCount}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div style={{ padding: '16px 0', marginBottom: 16 }}>
+                <p style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>
+                  No referrals completed this quarter yet — yours could be first.
+                </p>
+              </div>
+            )}
+
+            {/* Opt-in toggle */}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <div
+                onClick={() => !optInLoading && handleOptIn(!data.leaderboard!.leaderboardOptIn)}
+                style={{
+                  width: 36, height: 20, borderRadius: 99, flexShrink: 0, cursor: optInLoading ? 'wait' : 'pointer',
+                  background: data.leaderboard.leaderboardOptIn ? 'var(--brand)' : 'var(--border)',
+                  position: 'relative', transition: 'background 0.2s', marginTop: 2,
+                }}
+              >
+                <div style={{
+                  width: 14, height: 14, borderRadius: '50%', background: '#fff',
+                  position: 'absolute', top: 3,
+                  left: data.leaderboard.leaderboardOptIn ? 19 : 3,
+                  transition: 'left 0.2s',
+                }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
+                  Show my name on the leaderboard
+                </p>
+                <p style={{ fontSize: 12, color: 'var(--muted)' }}>
+                  Your first name will be visible to other referrers. Toggle off anytime.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Reward Journey ───────────────────────────────────────────────────── */}
         <div style={{ background: 'var(--surface)', borderRadius: 20, padding: 24, border: '1px solid var(--border)' }}>

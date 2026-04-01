@@ -30,18 +30,19 @@ enum AdminRole {
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model Referrer {
-  id              String    @id @default(cuid())
-  name            String
-  phone           String    @unique
-  email           String    @unique
-  city            String?
-  referralCode    String    @unique
-  isTenant        Boolean   @default(false)
-  isActive        Boolean   @default(true)
-  isDisqualified  Boolean   @default(false)
-  disqualifyNote  String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  name             String
+  phone            String    @unique
+  email            String    @unique
+  city             String?
+  referralCode     String    @unique
+  isTenant         Boolean   @default(false)
+  isActive         Boolean   @default(true)
+  isDisqualified   Boolean   @default(false)
+  disqualifyNote   String?
+  leaderboardOptIn Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   referrals   Referral[]
   redemptions Redemption[]
@@ -170,4 +171,14 @@ model CommTemplate {
   variables Json     @default("[]")
   updatedAt DateTime @updatedAt
   updatedBy String?
+}
+
+model AmbassadorTier {
+  id           Int      @id @default(autoincrement())
+  name         String
+  minReferrals Int
+  colorToken   String   @default("brand")
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

@@ -3,8 +3,9 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { verifyReferrerToken, COOKIE_NAMES } from '@/lib/auth'
 import { getTemplate, renderTemplate } from '@/lib/comms'
+import { getAllTiers, computeTier, getCurrentQuarter } from '@/lib/ambassadorTiers'
 
-// GET /api/referrers/me — returns full profile + milestone context
+// GET /api/referrers/me — returns full profile + milestone context + leaderboard data
 export async function GET(_req: NextRequest) {
   // ── Dev bypass — return stub data so dashboard is viewable without auth ──
   if (process.env.NODE_ENV !== 'production') {
@@ -35,6 +36,17 @@ export async function GET(_req: NextRequest) {
         { id: 'ref2', refereeName: 'Priya Sharma', refereePhone: '87654XXXXX', status: 'AGREEMENT_SIGNED', interestedAt: new Date().toISOString() },
         { id: 'ref3', refereeName: 'Rohan Gupta', refereePhone: '76543XXXXX', status: 'INTERESTED', interestedAt: new Date().toISOString() },
       ],
+      leaderboard: {
+        ambassadorTier: { name: 'Connector', colorToken: 'success' },
+        leaderboardOptIn: false,
+        quarterly: {
+          rank: 4,
+          total: 12,
+          quarterlyCount: 3,
+          quarter: 'Q2 2026',
+          resetsOn: new Date(2026, 6, 1).toISOString(),
+        },
+      },
     })
   }
 
@@ -45,7 +57,9 @@ export async function GET(_req: NextRequest) {
   const payload = verifyReferrerToken(token)
   if (!payload) return Response.json({ error: 'Invalid session' }, { status: 401 })
 
-  const [referrer, milestones, allRedemptions, waShareTpl] = await Promise.all([
+  const { start, end, label: qLabel, resetsOn } = getCurrentQuarter()
+
+  const [referrer, milestones, allRedemptions, waShareTpl, allTiers, quarterlyGroups] = await Promise.all([
     prisma.referrer.findUnique({
       where: { id: payload.sub },
       include: {
@@ -82,6 +96,17 @@ export async function GET(_req: NextRequest) {
       },
     }),
     getTemplate('ui_wa_share_text'),
+    getAllTiers(),
+    prisma.referral.groupBy({
+      by: ['referrerId'],
+      where: {
+        status: 'COMPLETED',
+        completedAt: { gte: start, lt: end },
+        isDisqualified: false,
+      },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+    }),
   ])
 
   if (!referrer) return Response.json({ error: 'Not found' }, { status: 404 })
@@ -92,23 +117,22 @@ export async function GET(_req: NextRequest) {
   )
 
   const streakCount = referrer.progress?.currentStreakCount ?? 0
-  const pendingRaw = allRedemptions.find(r => r.status === 'PENDING')
+  const lifetimeCount = referrer.progress?.lifetimeCompletedCount ?? 0
+  const pendingRaw = allRedemptions.find((r) => r.status === 'PENDING')
 
   const pendingRedemption = pendingRaw
     ? { milestoneId: pendingRaw.milestoneId, rewardName: pendingRaw.milestone.rewardName, tierNumber: pendingRaw.milestone.tierNumber }
     : null
 
-  // Eligible to claim: streak reached + no pending redemption in flight
   const redeemableMilestones = pendingRedemption
     ? []
-    : milestones.filter(m => streakCount >= m.referralsRequired)
+    : milestones.filter((m) => streakCount >= m.referralsRequired)
 
-  const nextMilestone = milestones.find(m => streakCount < m.referralsRequired) ?? null
+  const nextMilestone = milestones.find((m) => streakCount < m.referralsRequired) ?? null
 
-  // All fulfilled redemptions as history
   const redeemedHistory = allRedemptions
-    .filter(r => r.status === 'FULFILLED')
-    .map(r => ({
+    .filter((r) => r.status === 'FULFILLED')
+    .map((r) => ({
       id: r.id,
       milestoneId: r.milestoneId,
       rewardName: r.milestone.rewardName,
@@ -124,6 +148,13 @@ export async function GET(_req: NextRequest) {
     return isNaN(num) ? sum : sum + num
   }, 0)
 
+  // ── Leaderboard / ambassador tier ──────────────────────────────────────────
+  const ambassadorTier = computeTier(lifetimeCount, allTiers)
+  const userQuarterlyEntry = quarterlyGroups.find((g) => g.referrerId === referrer.id)
+  const quarterlyCount = userQuarterlyEntry?._count.id ?? 0
+  const quarterlyRank = userQuarterlyEntry ? quarterlyGroups.indexOf(userQuarterlyEntry) + 1 : null
+  const quarterlyTotal = quarterlyGroups.length
+
   return Response.json({
     waShareText,
     referrer: {
@@ -136,7 +167,7 @@ export async function GET(_req: NextRequest) {
     },
     progress: {
       streakCount,
-      lifetimeCount: referrer.progress?.lifetimeCompletedCount ?? 0,
+      lifetimeCount,
       nextMilestone,
       redeemableMilestones,
       pendingRedemption,
@@ -145,5 +176,44 @@ export async function GET(_req: NextRequest) {
     },
     milestones,
     referrals: referrer.referrals,
+    leaderboard: {
+      ambassadorTier: ambassadorTier
+        ? { name: ambassadorTier.name, colorToken: ambassadorTier.colorToken }
+        : null,
+      leaderboardOptIn: referrer.leaderboardOptIn,
+      quarterly: {
+        rank: quarterlyRank,
+        total: quarterlyTotal,
+        quarterlyCount,
+        quarter: qLabel,
+        resetsOn: resetsOn.toISOString(),
+      },
+    },
   })
+}
+
+// PATCH /api/referrers/me — update leaderboardOptIn
+export async function PATCH(req: NextRequest) {
+  if (process.env.NODE_ENV !== 'production') {
+    return Response.json({ ok: true })
+  }
+
+  const cookieStore = await cookies()
+  const token = cookieStore.get(COOKIE_NAMES.REFERRER)?.value
+  if (!token) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const payload = verifyReferrerToken(token)
+  if (!payload) return Response.json({ error: 'Invalid session' }, { status: 401 })
+
+  const body = await req.json()
+  if (typeof body.leaderboardOptIn !== 'boolean') {
+    return Response.json({ error: 'leaderboardOptIn must be a boolean' }, { status: 400 })
+  }
+
+  await prisma.referrer.update({
+    where: { id: payload.sub },
+    data: { leaderboardOptIn: body.leaderboardOptIn },
+  })
+
+  return Response.json({ ok: true })
 }

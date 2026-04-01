@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import CommsTab from './components/CommsTab'
+import TiersTab from './components/TiersTab'
 
-type Tab = 'overview' | 'referrers' | 'redemptions' | 'milestones' | 'comms'
+type Tab = 'overview' | 'referrers' | 'redemptions' | 'milestones' | 'comms' | 'tiers'
 
 interface Stats {
   totalReferrers: number
@@ -204,6 +205,7 @@ export default function AdminDashboard() {
             { id: 'referrers', label: `Referrers${referrers.length ? ` (${referrers.length})` : ''}` },
             { id: 'redemptions', label: `Redemptions${redemptions.filter(r => r.status === 'PENDING').length ? ` 🔴 ${redemptions.filter(r => r.status === 'PENDING').length}` : ''}` },
             { id: 'milestones', label: 'Milestones' },
+            { id: 'tiers', label: 'Tiers' },
             { id: 'comms', label: 'Comms' },
           ] as const).map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '8px 18px', borderRadius: 999, border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer', background: tab === t.id ? 'var(--brand)' : 'transparent', color: tab === t.id ? '#fff' : 'var(--muted)', transition: 'all 0.15s' }}>
@@ -443,6 +445,7 @@ export default function AdminDashboard() {
       </div>
 
         {/* ── Comms ────────────────────────────────────────────────────────── */}
+        {tab === 'tiers' && <TiersTab />}
         {tab === 'comms' && <CommsTab />}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

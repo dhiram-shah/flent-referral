@@ -148,6 +148,12 @@ export const DEFAULT_TEMPLATES: Record<string, Omit<CommTemplate, 'key' | 'updat
     body: `Hey! I've been using Flent for my Bangalore accommodation and it's been great. Check them out and use my referral code *{{referralCode}}* when you enquire. They've got amazing co-living spaces! 🏠 https://flent.in`,
     variables: ['referralCode'],
   },
+  ui_community_stat: {
+    label: 'Community Stat (Home Page)',
+    channel: 'UI',
+    body: '500+',
+    variables: [],
+  },
 }
 
 /** Fetch a template from DB, auto-seeding the default if it doesn't exist yet */
