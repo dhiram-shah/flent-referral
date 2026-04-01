@@ -145,8 +145,14 @@ export const DEFAULT_TEMPLATES: Record<string, Omit<CommTemplate, 'key' | 'updat
   ui_wa_share_text: {
     label: 'WhatsApp Share Sheet',
     channel: 'UI',
-    body: `Hey! I've been using Flent for my Bangalore accommodation and it's been great. Check them out and use my referral code *{{referralCode}}* when you enquire. They've got amazing co-living spaces! 🏠 https://flent.in`,
-    variables: ['referralCode'],
+    body: `Hey! I've already referred {{lifetimeCount}} friends to Flent and they're really happy living there! 🏠\n\nCheck out their co-living spaces in Bangalore and use my code *{{referralCode}}* when you enquire.\n\nhttps://flent.in{{tierBrag}}`,
+    variables: ['referralCode', 'lifetimeCount', 'tierBrag'],
+  },
+  ui_instagram_share_text: {
+    label: 'Instagram Share Caption',
+    channel: 'UI',
+    body: `Living in Bangalore or moving here? I've already referred {{lifetimeCount}} friends to @flentliving and they absolutely love it 🏠\n\nUse my referral code {{referralCode}} when you enquire at flent.in{{tierBrag}}`,
+    variables: ['referralCode', 'lifetimeCount', 'tierBrag'],
   },
   ui_community_stat: {
     label: 'Community Stat (Home Page)',

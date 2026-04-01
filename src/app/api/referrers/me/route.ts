@@ -17,7 +17,8 @@ export async function GET(_req: NextRequest) {
       { id: 'ms5', tierNumber: 5, referralsRequired: 12, rewardName: 'iPhone 16', rewardDescription: 'Grand prize — all yours', rewardValue: '80000', requiresExtraInfo: false },
     ]
     return Response.json({
-      waShareText: `Hey! I've been using Flent for my Bangalore accommodation and it's been great. Check them out and use my referral code *DEV123* when you enquire. They've got amazing co-living spaces! 🏠 https://flent.in`,
+      waShareText: `Hey! I've already referred 5 friends to Flent and they're really happy living there! 🏠\n\nUse my code *DEV123* when you enquire.\n\nhttps://flent.in`,
+      igShareText: `Living in Bangalore? I've already referred 5 friends to @flentliving and they love it 🏠\n\nUse my code DEV123 when you enquire at flent.in\n\nAs a Flent Connector, I've personally vouched for these homes.`,
       referrer: { id: 'dev', name: 'Dev User', email: 'dev@flent.in', phone: '9999999999', referralCode: 'DEV123', isTenant: true },
       progress: {
         streakCount: 3,
@@ -39,6 +40,11 @@ export async function GET(_req: NextRequest) {
       leaderboard: {
         ambassadorTier: { name: 'Connector', colorToken: 'success' },
         leaderboardOptIn: false,
+        allTiers: [
+          { id: 1, name: 'Scout', minReferrals: 1, colorToken: 'info' },
+          { id: 2, name: 'Connector', minReferrals: 3, colorToken: 'success' },
+          { id: 3, name: 'Ambassador', minReferrals: 6, colorToken: 'brand' },
+        ],
         quarterly: {
           rank: 4,
           total: 12,
@@ -59,7 +65,7 @@ export async function GET(_req: NextRequest) {
 
   const { start, end, label: qLabel, resetsOn } = getCurrentQuarter()
 
-  const [referrer, milestones, allRedemptions, waShareTpl, allTiers, quarterlyGroups] = await Promise.all([
+  const [referrer, milestones, allRedemptions, waShareTpl, igShareTpl, allTiers, quarterlyGroups] = await Promise.all([
     prisma.referrer.findUnique({
       where: { id: payload.sub },
       include: {
@@ -96,6 +102,7 @@ export async function GET(_req: NextRequest) {
       },
     }),
     getTemplate('ui_wa_share_text'),
+    getTemplate('ui_instagram_share_text'),
     getAllTiers(),
     prisma.referral.groupBy({
       by: ['referrerId'],
@@ -110,11 +117,6 @@ export async function GET(_req: NextRequest) {
   ])
 
   if (!referrer) return Response.json({ error: 'Not found' }, { status: 404 })
-
-  const waShareText = renderTemplate(
-    waShareTpl?.body ?? `Hey! Use my referral code *{{referralCode}}* on Flent. 🏠 https://flent.in`,
-    { referralCode: referrer.referralCode }
-  )
 
   const streakCount = referrer.progress?.currentStreakCount ?? 0
   const lifetimeCount = referrer.progress?.lifetimeCompletedCount ?? 0
@@ -150,6 +152,18 @@ export async function GET(_req: NextRequest) {
 
   // ── Leaderboard / ambassador tier ──────────────────────────────────────────
   const ambassadorTier = computeTier(lifetimeCount, allTiers)
+  const tierBrag = ambassadorTier ? `\n\nAs a Flent ${ambassadorTier.name}, I've personally vouched for these homes.` : ''
+
+  const renderVars = { referralCode: referrer.referralCode, lifetimeCount: String(lifetimeCount), tierBrag }
+  const waShareText = renderTemplate(
+    waShareTpl?.body ?? `Hey! I've already referred ${lifetimeCount} friends to Flent and they're really happy! 🏠\n\nUse my code *{{referralCode}}* when you enquire.\n\nhttps://flent.in`,
+    renderVars
+  )
+  const igShareText = renderTemplate(
+    igShareTpl?.body ?? `Living in Bangalore? I've referred ${lifetimeCount} friends to @flentliving and they love it 🏠\n\nUse my code {{referralCode}} when you enquire at flent.in`,
+    renderVars
+  )
+
   const userQuarterlyEntry = quarterlyGroups.find((g) => g.referrerId === referrer.id)
   const quarterlyCount = userQuarterlyEntry?._count.id ?? 0
   const quarterlyRank = userQuarterlyEntry ? quarterlyGroups.indexOf(userQuarterlyEntry) + 1 : null
@@ -157,6 +171,7 @@ export async function GET(_req: NextRequest) {
 
   return Response.json({
     waShareText,
+    igShareText,
     referrer: {
       id: referrer.id,
       name: referrer.name,
@@ -180,6 +195,7 @@ export async function GET(_req: NextRequest) {
       ambassadorTier: ambassadorTier
         ? { name: ambassadorTier.name, colorToken: ambassadorTier.colorToken }
         : null,
+      allTiers: allTiers.map((t) => ({ id: t.id, name: t.name, minReferrals: t.minReferrals, colorToken: t.colorToken })),
       leaderboardOptIn: referrer.leaderboardOptIn,
       quarterly: {
         rank: quarterlyRank,

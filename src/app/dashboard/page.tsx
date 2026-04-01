@@ -3,6 +3,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 
+const TIER_COLOR_MAP: Record<string, { color: string; bg: string }> = {
+  info:    { color: 'var(--info)',    bg: 'var(--info-light)' },
+  success: { color: 'var(--success)', bg: 'var(--success-light)' },
+  brand:   { color: 'var(--brand)',   bg: 'var(--pastel-violet)' },
+  warning: { color: '#D97706',        bg: '#FEF3C7' },
+}
+
 interface Milestone {
   id: string
   tierNumber: number
@@ -53,8 +60,16 @@ interface LeaderboardEntry {
   tierColorToken: string | null
 }
 
+interface TierInfo {
+  id: number
+  name: string
+  minReferrals: number
+  colorToken: string
+}
+
 interface LeaderboardData {
   ambassadorTier: { name: string; colorToken: string } | null
+  allTiers: TierInfo[]
   leaderboardOptIn: boolean
   quarterly: {
     rank: number | null
@@ -67,6 +82,7 @@ interface LeaderboardData {
 
 interface DashboardData {
   waShareText: string
+  igShareText: string
   referrer: { id: string; name: string; email: string; phone: string; referralCode: string; isTenant: boolean }
   progress: Progress
   milestones: Milestone[]
@@ -95,6 +111,8 @@ export default function DashboardPage() {
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([])
   const [leaderboardMeta, setLeaderboardMeta] = useState<{ quarter: string; totalParticipants: number } | null>(null)
   const [optInLoading, setOptInLoading] = useState(false)
+  const [badgeOpen, setBadgeOpen] = useState(false)
+  const [igCopied, setIgCopied] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -151,6 +169,21 @@ export default function DashboardPage() {
     } finally {
       setRedeemLoading(false)
     }
+  }
+
+  async function shareInstagram() {
+    if (!data) return
+    const text = data.igShareText
+    try {
+      if (navigator.share) {
+        await navigator.share({ text })
+        return
+      }
+    } catch { /* user cancelled or not supported */ }
+    await navigator.clipboard.writeText(text)
+    setIgCopied(true)
+    setTimeout(() => setIgCopied(false), 3000)
+    window.open('https://www.instagram.com/', '_blank')
   }
 
   async function handleOptIn(value: boolean) {
@@ -260,7 +293,6 @@ export default function DashboardPage() {
               </div>
             </Link>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-              <span style={{ fontSize: 14, color: 'var(--muted)' }}>Hi, {referrer.name.split(' ')[0]}</span>
               <button onClick={handleLogout} style={{ fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                 Sign out
               </button>
@@ -268,42 +300,86 @@ export default function DashboardPage() {
           </div>
         </nav>
 
-        {/* Hero — referral code */}
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 560, margin: '0 auto', padding: 'clamp(36px, 5vw, 60px) 24px clamp(44px, 6vw, 68px)', textAlign: 'center' }}>
+        {/* Hero — greeting + code */}
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 480, margin: '0 auto', padding: 'clamp(28px, 4vw, 48px) 24px clamp(32px, 4vw, 48px)', textAlign: 'center' }}>
 
-          {/* Badge row */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 20 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--brand-light)', color: 'var(--brand)', padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', flexShrink: 0 }} />
-              Referral Program
-            </div>
-            {data.leaderboard?.ambassadorTier && (() => {
-              const tierColorMap: Record<string, { color: string; bg: string }> = {
-                info:    { color: 'var(--info)',    bg: 'var(--info-light)' },
-                success: { color: 'var(--success)', bg: 'var(--success-light)' },
-                brand:   { color: 'var(--brand)',   bg: 'var(--pastel-violet)' },
-                warning: { color: '#D97706',        bg: '#FEF3C7' },
-              }
-              const tc = tierColorMap[data.leaderboard.ambassadorTier.colorToken] ?? tierColorMap.brand
-              return (
-                <div style={{ display: 'inline-flex', alignItems: 'center', background: tc.bg, color: tc.color, padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, border: `1px solid ${tc.color}` }}>
-                  {data.leaderboard.ambassadorTier.name}
-                </div>
-              )
-            })()}
-          </div>
+          {/* Ambassador circle badge */}
+          {(() => {
+            const tier = data.leaderboard?.ambassadorTier
+            const tc = tier ? (TIER_COLOR_MAP[tier.colorToken] ?? TIER_COLOR_MAP.brand) : null
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
+                <button
+                  onClick={() => setBadgeOpen((v) => !v)}
+                  style={{
+                    width: 72, height: 72, borderRadius: '50%',
+                    background: tc?.bg ?? 'var(--brand-light)',
+                    border: `3px solid ${tc?.color ?? 'var(--brand)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', flexShrink: 0,
+                    transition: 'transform 0.12s ease',
+                  }}
+                  aria-label={tier ? `${tier.name} — click to see tiers` : 'Click to learn about ambassador tiers'}
+                >
+                  <span className="serif-italic" style={{ fontSize: 28, fontWeight: 700, color: tc?.color ?? 'var(--brand)', lineHeight: 1, userSelect: 'none' }}>
+                    {referrer.name[0].toUpperCase()}
+                  </span>
+                </button>
 
-          {/* Headline */}
-          <h1 className="serif-italic" style={{ fontSize: 'clamp(26px, 3.5vw, 40px)', fontWeight: 600, color: 'var(--brand)', lineHeight: 1.2, marginBottom: 12 }}>
-            Refer friends. Earn rewards.
+                {tier ? (
+                  <button
+                    onClick={() => setBadgeOpen((v) => !v)}
+                    style={{ marginTop: 8, background: tc!.bg, color: tc!.color, fontSize: 11, fontWeight: 700, padding: '3px 12px', borderRadius: 99, textTransform: 'uppercase' as const, letterSpacing: 1, border: `1px solid ${tc!.color}`, cursor: 'pointer' }}
+                  >
+                    {tier.name}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setBadgeOpen((v) => !v)}
+                    style={{ marginTop: 8, background: 'none', border: 'none', fontSize: 12, color: 'var(--muted)', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Earn your first badge
+                  </button>
+                )}
+
+                {/* Tier info popover */}
+                {badgeOpen && (
+                  <div style={{
+                    marginTop: 12, background: 'var(--surface)', borderRadius: 16,
+                    border: '1.5px solid var(--brand)', boxShadow: '3px 3px 0 var(--brand)',
+                    padding: '16px 20px', maxWidth: 300, width: '100%', textAlign: 'left',
+                  }}>
+                    <p style={{ fontWeight: 700, fontSize: 11, marginBottom: 14, color: 'var(--muted)', textTransform: 'uppercase' as const, letterSpacing: 2 }}>Ambassador Tiers</p>
+                    {(data.leaderboard?.allTiers ?? []).map((t) => {
+                      const ttc = TIER_COLOR_MAP[t.colorToken] ?? TIER_COLOR_MAP.brand
+                      const achieved = progress.lifetimeCount >= t.minReferrals
+                      const isCurrent = data.leaderboard?.ambassadorTier?.name === t.name
+                      return (
+                        <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, opacity: achieved ? 1 : 0.38 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: achieved ? ttc.color : 'var(--border)', flexShrink: 0 }} />
+                          <span style={{ flex: 1, fontSize: 13, fontWeight: isCurrent ? 700 : 500, color: 'var(--text)' }}>{t.name}</span>
+                          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t.minReferrals}+ referrals</span>
+                          {isCurrent && <span style={{ fontSize: 10, fontWeight: 700, background: ttc.bg, color: ttc.color, padding: '2px 8px', borderRadius: 99 }}>you</span>}
+                        </div>
+                      )
+                    })}
+                    {!data.leaderboard?.ambassadorTier && (
+                      <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, lineHeight: 1.6 }}>
+                        Complete your first referral to earn the Scout badge and appear on the quarterly leaderboard.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
+          {/* Greeting */}
+          <h1 className="serif-italic" style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 600, color: 'var(--brand)', lineHeight: 1.15, marginBottom: 24 }}>
+            Hey, {referrer.name.split(' ')[0]}
           </h1>
 
-          {/* Description — comes before code so context is clear */}
-          <p style={{ color: 'var(--muted)', fontSize: 15, lineHeight: 1.65, maxWidth: 380, margin: '0 auto 28px' }}>
-            Share your code with anyone moving to Bangalore. When they move into Flent, you unlock a reward.
-          </p>
-
-          {/* Code box — inline copy, never breaks to two lines */}
+          {/* Code box */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -313,7 +389,7 @@ export default function DashboardPage() {
             boxShadow: '4px 4px 0 var(--brand)',
             borderRadius: 14,
             padding: '10px 10px 10px 20px',
-            marginBottom: 12,
+            marginBottom: 10,
           }}>
             <span
               className="serif-italic"
@@ -334,14 +410,19 @@ export default function DashboardPage() {
               {referrer.referralCode}
             </span>
             <button onClick={copyCode} className="btn-base btn-pastel-violet" style={{ flexShrink: 0, fontSize: 13, padding: '9px 18px' }}>
-              {copied ? '✓ Copied' : 'Copy code'}
+              {copied ? '✓ Copied' : 'Copy'}
             </button>
           </div>
 
-          {/* WhatsApp share */}
-          <button onClick={shareWhatsApp} className="btn-base btn-pastel-peach" style={{ width: '100%', padding: '13px 24px', fontSize: 15 }}>
-            Share on WhatsApp
-          </button>
+          {/* Share buttons */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <button onClick={shareWhatsApp} className="btn-base btn-pastel-peach" style={{ padding: '13px 16px', fontSize: 14 }}>
+              WhatsApp
+            </button>
+            <button onClick={shareInstagram} className="btn-base btn-pastel-violet" style={{ padding: '13px 16px', fontSize: 14 }}>
+              {igCopied ? 'Caption copied!' : 'Instagram'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -395,13 +476,7 @@ export default function DashboardPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
                 {leaderboardEntries.slice(0, 5).map((entry) => {
                   const isYou = entry.referrerId === referrer.id
-                  const tierColorMap: Record<string, { color: string; bg: string }> = {
-                    info:    { color: 'var(--info)',    bg: 'var(--info-light)' },
-                    success: { color: 'var(--success)', bg: 'var(--success-light)' },
-                    brand:   { color: 'var(--brand)',   bg: 'var(--pastel-violet)' },
-                    warning: { color: '#D97706',        bg: '#FEF3C7' },
-                  }
-                  const tc = entry.tierColorToken ? tierColorMap[entry.tierColorToken] : null
+                  const tc = entry.tierColorToken ? TIER_COLOR_MAP[entry.tierColorToken] : null
                   return (
                     <div
                       key={entry.referrerId}
