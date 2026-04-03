@@ -204,12 +204,10 @@ export default function LoginPage() {
                   <WhatsAppIcon />
                 </div>
                 <h1 className="serif-italic" style={{ fontWeight: 600, fontSize: 24, marginBottom: 8 }}>
-                  Check email & WhatsApp
+                  Check Mail & WhatsApp
                 </h1>
                 <p style={{ color: 'var(--muted)', fontSize: 14 }}>
-                  We sent a 6-digit code to <strong>{email}</strong> and your WhatsApp.
-                  <br />
-                  Enter it below to sign in.
+                  A 6-digit code has been sent to you.
                 </p>
               </div>
               <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

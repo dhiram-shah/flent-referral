@@ -392,19 +392,15 @@ export default function DashboardPage() {
             marginBottom: 10,
           }}>
             <span
-              className="serif-italic"
               style={{
-                fontSize: 'clamp(18px, 3vw, 28px)',
-                fontWeight: 600,
+                fontSize: 'clamp(13px, 3vw, 17px)',
+                fontWeight: 700,
                 color: 'var(--brand)',
-                letterSpacing: 3,
+                letterSpacing: 1.5,
                 lineHeight: 1,
                 whiteSpace: 'nowrap',
                 flex: 1,
                 textAlign: 'left',
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
               }}
             >
               {referrer.referralCode}
