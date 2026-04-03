@@ -306,7 +306,7 @@ export default function AdminDashboard() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                      {['Name', 'Code', 'Streak / Lifetime', 'Type', 'Status', 'Actions'].map((h) => (
+                      {['Name', 'Code', 'Streak / Lifetime', 'Source', 'Joined', 'Status', 'Actions'].map((h) => (
                         <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>{h}</th>
                       ))}
                     </tr>
@@ -325,9 +325,12 @@ export default function AdminDashboard() {
                           {r.progress?.currentStreakCount ?? 0} / {r.progress?.lifetimeCompletedCount ?? 0}
                         </td>
                         <td style={{ padding: '12px 16px' }}>
-                          <span style={{ background: r.isTenant ? '#D1FAE5' : 'var(--brand-light)', color: r.isTenant ? '#059669' : 'var(--brand)', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 99 }}>
-                            {r.isTenant ? 'Tenant' : 'External'}
+                          <span style={{ background: r.isTenant ? '#EDE9FE' : '#DBEAFE', color: r.isTenant ? '#7C3AED' : '#1D4ED8', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 99 }}>
+                            {r.isTenant ? 'Auto-enrolled' : 'Self sign-up'}
                           </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                          {new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           <span style={{ background: r.isDisqualified ? '#FEE2E2' : r.isActive ? '#D1FAE5' : '#F3F4F6', color: r.isDisqualified ? 'var(--danger)' : r.isActive ? 'var(--success)' : 'var(--muted)', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 99 }}>

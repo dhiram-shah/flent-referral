@@ -8,7 +8,7 @@
  *     - token_payment_status
  *     - first_month_rent
  *     - tenant_security_deposit
- *   Also subscribe to contact.creation for auto-enroll.
+ *     - customer_type  (auto-enrolls referrer when value = "Tenant"; upgrades existing referrer to isTenant=true)
  *
  * Flow:
  *   Typeform fill            → INTERESTED  (Typeform webhook)
@@ -229,8 +229,16 @@ async function autoEnrollTenant(hubspotContactId: string): Promise<void> {
   const existing = await prisma.referrer.findFirst({
     where: { OR: [{ email: contact.email }, { phone: contact.phone }] },
   })
-  if (existing) return
 
+  // Already a referrer — just mark them as a tenant if not already
+  if (existing) {
+    if (!existing.isTenant) {
+      await prisma.referrer.update({ where: { id: existing.id }, data: { isTenant: true } })
+    }
+    return
+  }
+
+  // New referrer — create with isTenant: true
   let referralCode = generateReferralCode(contact.name)
   let attempts = 0
   while (await prisma.referrer.findUnique({ where: { referralCode } })) {
@@ -265,13 +273,8 @@ async function handleEvent(event: HubSpotEvent): Promise<void> {
   const { subscriptionType, objectId, propertyName, propertyValue } = event
   const contactId = objectId.toString()
 
-  if (subscriptionType === 'contact.creation') {
-    await autoEnrollTenant(contactId)
-    return
-  }
-
   if (subscriptionType === 'contact.propertyChange') {
-    if (propertyName === 'lifecyclestage' && propertyValue === 'customer') {
+    if (propertyName === 'customer_type' && propertyValue === 'Tenant') {
       await autoEnrollTenant(contactId)
       return
     }
