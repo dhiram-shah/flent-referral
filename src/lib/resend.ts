@@ -10,11 +10,15 @@ function getResend(): Resend {
 const FROM = process.env.RESEND_FROM_EMAIL ?? 'referrals@email.flent.in'
 
 export async function sendOtpEmail(email: string, name: string, otp: string): Promise<void> {
-  const tpl = await getTemplate('email_otp')
-  if (!tpl) return
-  const subject = renderTemplate(tpl.subject ?? '{{otp}} is your Flent verification code', { name, otp })
-  const html = renderTemplate(tpl.body, { name, otp })
-  await getResend().emails.send({ from: FROM, to: email, subject, html })
+  const tpl = await getTemplate('email_otp').catch(() => null)
+  const subject = tpl
+    ? renderTemplate(tpl.subject ?? '{{otp}} is your Flent verification code', { name, otp })
+    : `${otp} is your Flent verification code`
+  const html = tpl
+    ? renderTemplate(tpl.body, { name, otp })
+    : `<p>Hi ${name},</p><p>Your Flent verification code is: <strong>${otp}</strong></p><p>Expires in 10 minutes. Never share it.</p>`
+  const { error } = await getResend().emails.send({ from: FROM, to: email, subject, html })
+  if (error) throw new Error(`[Resend] ${JSON.stringify(error)}`)
 }
 
 export async function sendWelcomeEmail(

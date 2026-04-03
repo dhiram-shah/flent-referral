@@ -2,7 +2,7 @@ import { NextRequest, after } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { createOtpSession } from '@/lib/otp'
-import { sendOtpEmail } from '@/lib/resend'
+import { notifyOtp } from '@/lib/notifications'
 
 const schema = z.object({
   name: z.string().min(2).max(100),
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       if (res) return res
       throw err
     }
-    after(() => { sendOtpEmail(email, existing.name, otp).catch(console.error) })
+    after(() => notifyOtp({ email, phone: existing.phone, name: existing.name, otp, referrerId: existing.id }).catch(console.error))
     return Response.json({ status: 'otp_sent', message: 'OTP sent to your email.', existing: true })
   }
 
@@ -67,6 +67,6 @@ export async function POST(request: NextRequest) {
     throw err
   }
 
-  after(() => { sendOtpEmail(email, name, otp).catch(console.error) })
+  after(() => notifyOtp({ email, phone, name, otp }).catch(console.error))
   return Response.json({ status: 'otp_sent', message: 'OTP sent to your email.' })
 }

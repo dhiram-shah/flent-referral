@@ -8,6 +8,7 @@ import * as email from './resend'
 import * as wa from './superchat'
 
 type NotifEvent =
+  | 'OTP_SENT'
   | 'WELCOME'
   | 'REFERRAL_INTERESTED'
   | 'REFERRAL_SIGNED'
@@ -57,6 +58,33 @@ async function fire(
   if (waResult.status === 'rejected') {
     console.error(`[Notify] WhatsApp ${event} failed:`, waResult.reason)
   }
+}
+
+export async function notifyOtp(params: {
+  email: string
+  phone: string
+  name: string
+  otp: string
+  referrerId?: string
+}): Promise<void> {
+  const [emailResult, waResult] = await Promise.allSettled([
+    email.sendOtpEmail(params.email, params.name, params.otp),
+    wa.sendOtpWhatsApp(params.phone, params.otp),
+  ])
+
+  if (params.referrerId) {
+    await prisma.notificationLog
+      .createMany({
+        data: [
+          { referrerId: params.referrerId, channel: 'EMAIL', event: 'OTP_SENT', status: emailResult.status === 'fulfilled' ? 'SENT' : 'FAILED' },
+          { referrerId: params.referrerId, channel: 'WHATSAPP', event: 'OTP_SENT', status: waResult.status === 'fulfilled' ? 'SENT' : 'FAILED' },
+        ],
+      })
+      .catch(console.error)
+  }
+
+  if (emailResult.status === 'rejected') console.error('[Notify] OTP email failed:', emailResult.reason)
+  if (waResult.status === 'rejected') console.error('[Notify] OTP WhatsApp failed:', waResult.reason)
 }
 
 export async function notifyWelcome(referrer: Referrer, referralCode: string): Promise<void> {

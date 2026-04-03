@@ -122,6 +122,14 @@ export async function sendMilestoneUnlockedWhatsApp(
   })
 }
 
+export async function sendOtpWhatsApp(phone: string, otp: string): Promise<void> {
+  const template = await getTemplateName(
+    'wa_template_otp',
+    process.env.SUPERCHAT_TEMPLATE_OTP ?? 'referral_otp_verification'
+  )
+  await sendWhatsAppMessage(phone, template, { '1': otp })
+}
+
 export async function sendRedemptionFulfilledWhatsApp(
   phone: string,
   referrerName: string,

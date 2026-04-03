@@ -112,6 +112,12 @@ export const DEFAULT_TEMPLATES: Record<string, Omit<CommTemplate, 'key' | 'updat
 </div>`,
     variables: ['firstName', 'rewardName', 'dashboardUrl'],
   },
+  wa_template_otp: {
+    label: 'WA: OTP Verification',
+    channel: 'WHATSAPP',
+    body: process.env.SUPERCHAT_TEMPLATE_OTP ?? 'referral_otp_verification',
+    variables: ['var1=otp'],
+  },
   wa_template_welcome: {
     label: 'WA: Welcome',
     channel: 'WHATSAPP',
