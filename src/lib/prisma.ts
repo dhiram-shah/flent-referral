@@ -7,6 +7,7 @@ function createPrismaClient() {
   const adapter = new PrismaPg({
     connectionString: process.env.DATABASE_URL!,
     ssl: { rejectUnauthorized: false },
+    max: 1, // serverless: 1 connection per Lambda instance prevents pool exhaustion
   })
   return new PrismaClient({ adapter }) as unknown as PrismaClient
 }
