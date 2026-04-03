@@ -97,11 +97,16 @@ A full marketing page explaining the referral program:
 
 ### 3.6 HubSpot Integration
 
+Contact-based — no deals. Match key: `refereeEmail` (from Typeform) = HubSpot contact `email`.
+
 | HubSpot Event | Action |
 |--------------|--------|
-| Deal → `agreement_signed` | Referral → AGREEMENT_SIGNED · Referrer notified |
-| Deal → `tenancy_completed` | Referral → COMPLETED · Streak +1 · Lifetime +1 · Referrer notified |
-| Contact creation / lifecycle → `customer` | Auto-enroll tenant as referrer |
+| `contact.propertyChange`: `token_payment_status = Paid` | Referral → AGREEMENT_SIGNED · Referrer notified |
+| `contact.propertyChange`: `first_month_rent = Paid` + `tenant_security_deposit = Paid` + `move_in_date` ≤ today | Referral → COMPLETED · Streak +1 · Lifetime +1 · Referrer notified |
+| `contact.propertyChange`: `customer_type = Tenant` | Auto-enroll as referrer (new contact) or upgrade existing referrer to `isTenant: true` |
+| Daily cron (01:00 UTC) | Sweeps all AGREEMENT_SIGNED referrals — catches move-ins where webhook was missed |
+
+Set up via HubSpot Private App → Webhooks tab (NOT Automation → Workflows).
 
 ### 3.7 Ambassador Tier System
 
@@ -132,28 +137,29 @@ Recognition layer built on top of `lifetimeCompletedCount`:
 
 ### 3.9 Communications Dashboard (Admin → Comms)
 
-All 14 outbound copy templates editable by marketing in real time — no deploy needed:
+All 15 outbound copy templates editable by marketing in real time — no deploy needed:
 
 | Channel | Templates |
 |---------|-----------|
 | Email (6) | OTP, Welcome, Referral Interested, Agreement Signed, Referral Completed, Redemption Confirmed |
-| WhatsApp (5) | Welcome, Interested, Signed, Completed, Redeemed |
+| WhatsApp (6) | OTP, Welcome, Interested, Signed, Completed, Redeemed |
 | UI (3) | WhatsApp Share Sheet, Instagram Share Caption, Community Stat (home page number) |
 
 Templates use `{{variable}}` placeholders rendered at send time. Share text templates support `{{referralCode}}`, `{{lifetimeCount}}`, `{{tierBrag}}` variables.
 
 ### 3.10 Admin Panel (`/admin`)
 
-Six tabs, password-protected:
+Seven tabs, password-protected:
 
 | Tab | Features |
 |-----|----------|
 | **Overview** | Total referrers, active, referrals by status, pending redemptions, recent signups |
-| **Referrers** | Full list with streak/lifetime counts, search, disqualify/reactivate |
+| **Referrers** | Full list with streak/lifetime counts, Source (Auto-enrolled/Self sign-up), Tenant badge, Joined date, search, disqualify/reactivate |
+| **Referrals** | All referrals with referee details, referrer name, status, dates — filterable by status |
 | **Redemptions** | Pending queue — mark fulfilled/rejected, add notes |
 | **Milestones** | Create, edit, toggle active/inactive reward tiers |
 | **Tiers** | Create/edit/delete ambassador tiers — name, referral threshold, color |
-| **Comms** | Edit all 14 email/WA/UI templates with variable hints and last-edited metadata |
+| **Comms** | Edit all 15 email/WA/UI templates with variable hints and last-edited metadata |
 
 Admin credentials seeded via `npm run db:seed`:
 - `demand@flent.in` — ADMIN role
@@ -168,9 +174,9 @@ Admin credentials seeded via `npm run db:seed`:
 Next.js 16 (App Router) → Supabase PostgreSQL (Prisma 7)
                         → Resend (email, async via after())
                         → Superchat (WhatsApp)
-                        ← HubSpot (webhooks — deal stages + tenant enrollment)
+                        ← HubSpot (contact property webhooks + daily cron — no deals)
                         ← Typeform (webhooks — referee inquiries)
-                        → Vercel (hosting)
+                        → Vercel (hosting + cron scheduler)
 ```
 
 **Data model (key tables):**
@@ -180,7 +186,7 @@ Next.js 16 (App Router) → Supabase PostgreSQL (Prisma 7)
 - `MilestoneConfig` — reward tiers, referralsRequired
 - `Redemption` — PENDING → FULFILLED / REJECTED
 - `AmbassadorTier` — name, minReferrals, colorToken, sortOrder (admin-configurable)
-- `CommTemplate` — 14 editable copy keys across 3 channels
+- `CommTemplate` — 15 editable copy keys across 3 channels
 - `NotificationLog` — audit trail for all sent notifications
 
 **Auth:**

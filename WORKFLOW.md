@@ -12,7 +12,7 @@
 | **Referee** | Friend who fills the Typeform inquiry using a referral code |
 | **Admin / Marketing** | Flent ops team — manages fulfillment, reviews, configures rewards, tiers, and comms copy |
 | **Typeform** | Inquiry form where referees enter the referral code |
-| **HubSpot** | CRM where sales manages deals and tenant lifecycle |
+| **HubSpot** | CRM where sales manages tenant lifecycle — contact properties drive referral status (no deals) |
 
 ---
 
@@ -56,15 +56,24 @@ Proxy (`src/proxy.ts`) guards `/dashboard` — must have valid `flent_ref_token`
 ## Flow 3 — Tenant Auto-Enrollment (HubSpot → Referrer)
 
 ```
-HubSpot: contact.creation  OR  lifecyclestage → "customer"
+HubSpot: contact.propertyChange  →  customer_type = "Tenant"
          → POST /api/webhooks/hubspot (HMAC-SHA256 verified, 5-min timestamp window)
          → Fetch contact from HubSpot API (firstname, lastname, email, phone)
-         → Check: already a referrer? → skip
-         → Create Referrer (isTenant: true, leaderboardOptIn: false) + ReferrerProgress + unique code
-         → Welcome notification (email + WhatsApp)
+         → Check: email or phone already a referrer?
+             YES, isTenant already true → skip (no-op)
+             YES, isTenant false → UPDATE isTenant = true (self sign-up upgraded to tenant)
+             NO → Create Referrer (isTenant: true, leaderboardOptIn: false)
+                  + ReferrerProgress + unique code
+                  → Welcome notification (email + WhatsApp)
 ```
 
+**Why `customer_type` not `contact.creation`:**
+- `contact.creation` fires for every new lead — prospects, vendors, anyone
+- `lifecyclestage = customer` is set too early in some sales flows
+- `customer_type = Tenant` is set only when ops confirms tenancy — the definitive signal
+
 Tenants never need to sign up manually — they receive their code by notification and log in via `/login`.
+Referrers who self-signed up and later become tenants are upgraded in-place; no duplicate account is created.
 
 ---
 
@@ -121,37 +130,55 @@ Referee → fills Typeform (name, phone, email, referral code field)
 
 ---
 
-## Flow 6 — Deal Progression via HubSpot
+## Flow 6 — Referral Progression via HubSpot
 
-### 6a — Agreement Signed
+Match key: `refereeEmail` (captured in Typeform) = HubSpot contact email.
+Set up via Private App → Webhooks tab. Subscribes to `contact.propertyChange` for 3 properties.
+
+### 6a — Token Paid → Agreement Signed
 
 ```
-HubSpot: deal stage → "agreement_signed"
-       → POST /api/webhooks/hubspot
-       → Lookup: Referral by hubspotId
-       → Guard: status must be INTERESTED, not disqualified
+HubSpot: sales marks token_payment_status = "Paid" on contact
+       → POST /api/webhooks/hubspot (HMAC-SHA256 verified)
+       → fetchContact(contactId) → get email
+       → findReferralByEmail(email)
+           orderBy: createdAt desc, exclude COMPLETED/disqualified
+       → Guard: status must be INTERESTED
        → Update: Referral → AGREEMENT_SIGNED, signedAt = now
        → Notification: referrer notified via email + WhatsApp
 ```
 
-### 6b — Tenancy Completed (Move-In + Earning Event)
+### 6b — Both Payments Settled + Move-In Date Passed → Completed
 
 ```
-HubSpot: deal stage → "tenancy_completed"
+HubSpot: sales marks first_month_rent = "Paid" OR tenant_security_deposit = "Paid"
        → POST /api/webhooks/hubspot
-       → Lookup: Referral by hubspotId
-       → Guard: not already COMPLETED, not disqualified
-       → Atomic transaction:
-           Referral → COMPLETED, completedAt = now
-           ReferrerProgress: currentStreakCount += 1, lifetimeCompletedCount += 1
-       → Check: does new streakCount match any MilestoneConfig.referralsRequired?
-       → Notification: referrer notified via email + WhatsApp
-           — milestone unlocked: message includes reward name
-           — no milestone yet: celebrates move-in only
+       → fetchContact(contactId) → check both payment fields + move_in_date
+       → Guard: both must be "Paid" AND move_in_date ≤ today
+       → Guard: referral status must be AGREEMENT_SIGNED
+       → markReferralCompleted(referral):
+           Atomic transaction:
+             Referral → COMPLETED, completedAt = now
+             ReferrerProgress: currentStreakCount += 1, lifetimeCompletedCount += 1 (upsert)
+           Check: does new streakCount match any MilestoneConfig.referralsRequired?
+           Notification: referrer notified (includes reward name if milestone unlocked)
        → Dashboard: referral shows "Completed"
        → Ambassador tier re-evaluated on next dashboard load (from lifetimeCompletedCount)
        → Quarterly leaderboard position updated (live from completedAt)
 ```
+
+### 6c — Daily Cron Safety Net (01:00 UTC)
+
+```
+Vercel Cron → GET /api/cron/check-moveins (Bearer CRON_SECRET)
+           → DB: all AGREEMENT_SIGNED referrals where isDisqualified=false
+           → For each: searchContactByEmail(refereeEmail) → HubSpot Search API
+           → Check: both payments Paid + move_in_date ≤ today
+           → If yes: markReferralCompleted(referral)
+           → Returns: { processed, completed, errors }
+```
+
+Catches referrals where the payment webhook fired before move_in_date arrived, or where HubSpot webhooks were missed.
 
 **Streak vs lifetime:**
 - `currentStreakCount` = referrals completed since last redemption (resets on claim)
@@ -337,13 +364,16 @@ false (default) → true (user consents via dashboard toggle or admin SQL bulk u
 
 | Var | Used In |
 |-----|---------|
+| `DATABASE_URL` | Supabase Session Pooler, IPv4, port **5432** (not 6543) |
+| `JWT_SECRET` | Signing `flent_ref_token` (referrer JWT, 30d) |
+| `ADMIN_JWT_SECRET` | Signing `flent_admin_token` (admin JWT, 8h) |
+| `RESEND_API_KEY` | Email delivery via Resend |
+| `RESEND_FROM_EMAIL` | Sender address (`referrals@email.flent.in`) |
+| `SUPERCHAT_API_KEY` | WhatsApp delivery via Superchat |
+| `SUPERCHAT_WORKSPACE_ID` | Superchat workspace identifier |
+| `HUBSPOT_WEBHOOK_SECRET` | HMAC-SHA256 signature verification on incoming HubSpot webhooks |
+| `HUBSPOT_ACCESS_TOKEN` | Fetching contact properties after webhook events |
+| `CRON_SECRET` | Bearer token securing `/api/cron/check-moveins` |
 | `TYPEFORM_WEBHOOK_SECRET` | Typeform signature verification |
-| `TYPEFORM_REFERRAL_CODE_FIELD_ID` | Extracting code from form answers |
-| `HUBSPOT_WEBHOOK_SECRET` | HubSpot signature verification |
-| `HUBSPOT_ACCESS_TOKEN` | Fetching contact details for auto-enroll |
-| `HUBSPOT_STAGE_AGREEMENT_SIGNED` | Deal stage string match |
-| `HUBSPOT_STAGE_COMPLETED` | Deal stage string match |
-| `RESEND_FROM_EMAIL` | Email sender (`referrals@email.flent.in`) |
-| `DATABASE_URL` | Supabase Session Pooler, IPv4, port 5432 |
-| `JWT_SECRET` | Signing referrer + admin JWT tokens |
-| `NEXT_PUBLIC_APP_URL` | Dashboard URL used in email links (optional, defaults to flent.in/referral-program) |
+| `TYPEFORM_REFERRAL_CODE_FIELD_ID` | Field ID for referral code answer in Typeform |
+| `NEXT_PUBLIC_APP_URL` | Dashboard URL in email links (default: `https://flent.in/referral-program`) |

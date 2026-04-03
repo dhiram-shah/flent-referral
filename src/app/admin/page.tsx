@@ -211,7 +211,7 @@ export default function AdminDashboard() {
     <main style={{ background: 'var(--bg)', minHeight: '100vh' }}>
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
       <nav style={{ background: 'var(--bg)', borderBottom: '1.5px solid var(--brand)', position: 'sticky', top: 0, zIndex: 50 }}>
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div style={{ background: 'var(--bg)', border: '1.5px solid var(--brand)', borderRadius: 999, padding: '6px 16px', display: 'inline-flex', alignItems: 'center' }}>
               <img src="/assets/flent-logo.png" alt="Flent" style={{ height: 20, display: 'block' }} />
@@ -222,7 +222,7 @@ export default function AdminDashboard() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-5xl mx-auto px-8 py-8">
         {/* ── Tabs ─────────────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: 'var(--surface)', padding: 4, borderRadius: 999, border: '1.5px solid var(--brand)', width: 'fit-content', boxShadow: '2px 2px 0 var(--brand)' }}>
           {([
