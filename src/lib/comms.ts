@@ -197,9 +197,17 @@ export async function getTemplate(key: string): Promise<CommTemplate | null> {
   }
 }
 
-/** Fetch all templates, seeding any missing defaults */
+/** Fetch all templates, seeding any missing defaults. Falls back to in-memory defaults if table missing. */
 export async function getAllTemplates(): Promise<CommTemplate[]> {
-  const existing = await prisma.commTemplate.findMany({ orderBy: { key: 'asc' } })
+  let existing: Awaited<ReturnType<typeof prisma.commTemplate.findMany>>
+  try {
+    existing = await prisma.commTemplate.findMany({ orderBy: { key: 'asc' } })
+  } catch {
+    // Table doesn't exist yet — return in-memory defaults
+    return Object.entries(DEFAULT_TEMPLATES).map(([key, def]) => ({
+      key, ...def, variables: def.variables as string[], updatedAt: new Date(), updatedBy: null,
+    }))
+  }
   const existingKeys = new Set(existing.map((t) => t.key))
 
   const toSeed = Object.entries(DEFAULT_TEMPLATES).filter(([key]) => !existingKeys.has(key))

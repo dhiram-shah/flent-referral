@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { PageLoader } from '@/components/PageLoader'
 
 const TIER_COLOR_MAP: Record<string, { color: string; bg: string }> = {
   info:    { color: 'var(--info)',    bg: 'var(--info-light)' },
@@ -250,7 +251,7 @@ export default function DashboardPage() {
     return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
-  if (loading) return <DashboardLoader />
+  if (loading) return <PageLoader messages={LOADING_MESSAGES} />
 
   if (!data) return error ? (
     <main style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>

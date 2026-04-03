@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import CommsTab from './components/CommsTab'
 import TiersTab from './components/TiersTab'
+import { PageLoader } from '@/components/PageLoader'
 
-type Tab = 'overview' | 'referrers' | 'redemptions' | 'milestones' | 'comms' | 'tiers'
+type Tab = 'overview' | 'referrers' | 'referrals' | 'redemptions' | 'milestones' | 'comms' | 'tiers'
 
 interface Stats {
   totalReferrers: number
@@ -41,6 +42,21 @@ interface Redemption {
   milestone: { rewardName: string; tierNumber: number; requiresExtraInfo: boolean }
 }
 
+interface AdminReferral {
+  id: string
+  refereeName: string
+  refereePhone: string
+  refereeEmail?: string
+  status: string
+  isDisqualified: boolean
+  disqualifyNote?: string
+  interestedAt: string
+  signedAt?: string
+  completedAt?: string
+  createdAt: string
+  referrer: { id: string; name: string; email: string; referralCode: string }
+}
+
 interface Milestone {
   id: string
   tierNumber: number
@@ -60,6 +76,9 @@ export default function AdminDashboard() {
   const [referrers, setReferrers] = useState<AdminReferrer[]>([])
   const [redemptions, setRedemptions] = useState<Redemption[]>([])
   const [milestones, setMilestones] = useState<Milestone[]>([])
+  const [referrals, setReferrals] = useState<AdminReferral[]>([])
+  const [referralStatus, setReferralStatus] = useState('')
+  const [referralsLoading, setReferralsLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -94,6 +113,21 @@ export default function AdminDashboard() {
   }, [router])
 
   useEffect(() => { fetchAll() }, [fetchAll])
+
+  const fetchReferrals = useCallback(async (status: string) => {
+    setReferralsLoading(true)
+    try {
+      const res = await fetch(`/api/admin/referrals${status ? `?status=${status}` : ''}`)
+      const data = await res.json()
+      setReferrals(data.referrals ?? [])
+    } finally {
+      setReferralsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (tab === 'referrals') fetchReferrals(referralStatus)
+  }, [tab, referralStatus, fetchReferrals])
 
   useEffect(() => {
     const handler = setTimeout(async () => {
@@ -171,16 +205,7 @@ export default function AdminDashboard() {
     router.push('/admin/login')
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, border: '3px solid var(--brand-light)', borderTopColor: 'var(--brand)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ color: 'var(--muted)', fontSize: 14 }}>Loading admin dashboard…</p>
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <PageLoader messages={['Fetching admin data…', 'Loading referrals & rewards…', 'Sniffing through the database…', 'Almost ready…']} />
 
   return (
     <main style={{ background: 'var(--bg)', minHeight: '100vh' }}>
@@ -203,6 +228,7 @@ export default function AdminDashboard() {
           {([
             { id: 'overview', label: 'Overview' },
             { id: 'referrers', label: `Referrers${referrers.length ? ` (${referrers.length})` : ''}` },
+            { id: 'referrals', label: 'Referrals' },
             { id: 'redemptions', label: `Redemptions${redemptions.filter(r => r.status === 'PENDING').length ? ` 🔴 ${redemptions.filter(r => r.status === 'PENDING').length}` : ''}` },
             { id: 'milestones', label: 'Milestones' },
             { id: 'tiers', label: 'Tiers' },
@@ -447,6 +473,61 @@ export default function AdminDashboard() {
         {/* ── Comms ────────────────────────────────────────────────────────── */}
         {tab === 'tiers' && <TiersTab />}
         {tab === 'comms' && <CommsTab />}
+
+        {/* ── Referrals ────────────────────────────────────────────────────── */}
+        {tab === 'referrals' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--brand)', margin: 0 }}>All Referrals</h2>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {['', 'INTERESTED', 'AGREEMENT_SIGNED', 'COMPLETED'].map((s) => (
+                  <button key={s} onClick={() => setReferralStatus(s)} style={{ padding: '5px 14px', borderRadius: 999, border: '1.5px solid var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: referralStatus === s ? 'var(--brand)' : 'transparent', color: referralStatus === s ? '#fff' : 'var(--brand)', transition: 'all 0.15s' }}>
+                    {s || 'All'}
+                  </button>
+                ))}
+              </div>
+              {referralsLoading && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Loading…</span>}
+            </div>
+            <div style={{ border: '1.5px solid var(--brand)', borderRadius: 12, overflow: 'hidden', boxShadow: '2px 2px 0 var(--brand)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--surface)', borderBottom: '1.5px solid var(--brand)' }}>
+                    {['Referee', 'Phone', 'Email', 'Referrer', 'Code', 'Status', 'Interested', 'Signed', 'Completed'].map(h => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, color: 'var(--brand)', fontSize: 12, whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {referrals.length === 0 && !referralsLoading && (
+                    <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--muted)' }}>No referrals found</td></tr>
+                  )}
+                  {referrals.map((r, i) => {
+                    const statusColors: Record<string, { color: string; bg: string }> = {
+                      INTERESTED: { color: '#D97706', bg: '#FEF3C7' },
+                      AGREEMENT_SIGNED: { color: '#2563EB', bg: '#DBEAFE' },
+                      COMPLETED: { color: '#059669', bg: '#D1FAE5' },
+                    }
+                    const sc = statusColors[r.status] ?? { color: 'var(--muted)', bg: 'var(--surface)' }
+                    return (
+                      <tr key={r.id} style={{ borderBottom: i < referrals.length - 1 ? '1px solid var(--border)' : 'none', background: r.isDisqualified ? '#FEF2F2' : 'transparent' }}>
+                        <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text)' }}>{r.refereeName}{r.isDisqualified && <span style={{ marginLeft: 6, fontSize: 10, color: '#DC2626', fontWeight: 700 }}>DQ</span>}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--muted)' }}>{r.refereePhone || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--muted)' }}>{r.refereeEmail || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text)' }}>{r.referrer.name}</td>
+                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)' }}>{r.referrer.referralCode}</td>
+                        <td style={{ padding: '10px 14px' }}><span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: sc.bg, color: sc.color }}>{r.status.replace('_', ' ')}</span></td>
+                        <td style={{ padding: '10px 14px', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{new Date(r.interestedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{r.signedAt ? new Date(r.signedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{r.completedAt ? new Date(r.completedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {referrals.length > 0 && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>{referrals.length} referral{referrals.length !== 1 ? 's' : ''}</p>}
+          </div>
+        )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </main>
