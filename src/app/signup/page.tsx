@@ -77,7 +77,7 @@ export default function SignupPage() {
         setError(data.error ?? 'Could not resend. Please try again.')
         return
       }
-      setResendMsg('Code resent — check your inbox.')
+      setResendMsg('Code resent to your email & WhatsApp.')
       startResendCooldown()
     } finally {
       setResendLoading(false)
@@ -218,14 +218,16 @@ export default function SignupPage() {
           {step === 'otp' && (
             <>
               <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+                <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
                   <MailIcon />
+                  <span style={{ color: 'var(--muted)', fontSize: 16, fontWeight: 300 }}>+</span>
+                  <WhatsAppIcon />
                 </div>
                 <h1 className="serif-italic" style={{ fontWeight: 600, fontSize: 24, marginBottom: 8 }}>
-                  Check your email
+                  Check email & WhatsApp
                 </h1>
                 <p style={{ color: 'var(--muted)', fontSize: 14 }}>
-                  We sent a 6-digit code to <strong>{form.email}</strong>.
+                  We sent a 6-digit code to <strong>{form.email}</strong> and your WhatsApp.
                   <br />
                   Enter it below to verify your account.
                 </p>
@@ -276,7 +278,7 @@ export default function SignupPage() {
                 </button>
               </form>
               <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: 'var(--muted)' }}>
-                Didn&apos;t receive it? Check spam or{' '}
+                Didn&apos;t receive it? Check email or WhatsApp, or{' '}
                 {resendCooldown > 0 ? (
                   <span style={{ color: 'var(--muted)' }}>resend in {resendCooldown}s</span>
                 ) : (
@@ -421,7 +423,7 @@ const inputStyle: React.CSSProperties = {
 
 function MailIcon() {
   return (
-    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M4.5 7.5C4.5 6.67157 5.17157 6 6 6H18C18.8284 6 19.5 6.67157 19.5 7.5V16.5C19.5 17.3284 18.8284 18 18 18H6C5.17157 18 4.5 17.3284 4.5 16.5V7.5Z"
         stroke="var(--brand)"
@@ -433,6 +435,25 @@ function MailIcon() {
         stroke="var(--brand)"
         strokeWidth="1.6"
         strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3C7.03 3 3 7.03 3 12c0 1.68.46 3.25 1.26 4.6L3 21l4.54-1.24A8.96 8.96 0 0012 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"
+        stroke="var(--brand)"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 10.5c.3 2.5 3.5 5.5 6 6"
+        stroke="var(--brand)"
+        strokeWidth="1.6"
         strokeLinecap="round"
       />
     </svg>

@@ -168,20 +168,33 @@ export const DEFAULT_TEMPLATES: Record<string, Omit<CommTemplate, 'key' | 'updat
   },
 }
 
-/** Fetch a template from DB, auto-seeding the default if it doesn't exist yet */
+/** Fetch a template from DB, auto-seeding the default if it doesn't exist yet.
+ *  Falls back to in-memory defaults if the DB table is unavailable (e.g. missing migration). */
 export async function getTemplate(key: string): Promise<CommTemplate | null> {
-  const existing = await prisma.commTemplate.findUnique({ where: { key } })
-  if (existing) {
-    return { ...existing, variables: existing.variables as string[] }
-  }
-
   const def = DEFAULT_TEMPLATES[key]
-  if (!def) return null
 
-  const created = await prisma.commTemplate.create({
-    data: { key, label: def.label, channel: def.channel, subject: def.subject, body: def.body, variables: def.variables },
-  })
-  return { ...created, variables: created.variables as string[] }
+  try {
+    const existing = await prisma.commTemplate.findUnique({ where: { key } })
+    if (existing) {
+      return { ...existing, variables: existing.variables as string[] }
+    }
+
+    if (!def) return null
+
+    try {
+      const created = await prisma.commTemplate.create({
+        data: { key, label: def.label, channel: def.channel, subject: def.subject, body: def.body, variables: def.variables },
+      })
+      return { ...created, variables: created.variables as string[] }
+    } catch {
+      // Seeding failed (e.g. race condition) — return in-memory default
+      return { key, ...def, updatedAt: new Date() }
+    }
+  } catch {
+    // Table doesn't exist or DB unreachable — return in-memory default
+    if (!def) return null
+    return { key, ...def, updatedAt: new Date() }
+  }
 }
 
 /** Fetch all templates, seeding any missing defaults */

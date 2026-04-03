@@ -66,7 +66,7 @@ function normalizePhone(phone: string): string {
 }
 
 async function getTemplateName(key: string, fallback: string): Promise<string> {
-  const tpl = await getTemplate(key)
+  const tpl = await getTemplate(key).catch(() => null)
   return tpl?.body ?? fallback
 }
 
