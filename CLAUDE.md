@@ -27,7 +27,7 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 - `src/lib/otp.ts` — OTP creation with 60s cooldown guard
 - `src/lib/resend.ts` — email sending; reads subject+body from `CommTemplate` via `src/lib/comms.ts`
 - `src/lib/superchat.ts` — WhatsApp via Superchat API; reads template names from `CommTemplate`
-- `src/lib/comms.ts` — **CommTemplate store**: `getTemplate(key)`, `getAllTemplates()`, `renderTemplate(str, vars)`. 14 default keys.
+- `src/lib/comms.ts` — **CommTemplate store**: `getTemplate(key)`, `getAllTemplates()`, `renderTemplate(str, vars)`. 15 default keys. Never throws — falls back to in-memory defaults.
 - `src/lib/ambassadorTiers.ts` — `getAllTiers()` (fetches + seeds defaults), `computeTier(lifetimeCount, tiers)`, `getCurrentQuarter()`, `TIER_COLORS` map
 - `src/lib/notifications.ts` — fires email + WhatsApp in parallel, logs to DB
 - `src/app/api/admin/comms/route.ts` — GET lists + seeds all comms templates
@@ -67,23 +67,35 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 | `ui_community_stat` | UI | (none — plain text like "500+") |
 
 ## Env Vars (critical)
-- `RESEND_FROM_EMAIL` = `referrals@email.flent.in`
-- `DATABASE_URL` = Supabase Session Pooler with IPv4 (port 5432, NOT 6543 transaction pooler)
-- `SUPERCHAT_API_KEY` + `SUPERCHAT_WORKSPACE_ID` — required for WhatsApp; missing = WA silently skipped
-- `SUPERCHAT_TEMPLATE_OTP` — override for OTP WA template name (default: `referral_otp_verification`)
+**Required — system breaks without these:**
+- `DATABASE_URL` — Supabase Session Pooler URI, port **5432** (NOT 6543 transaction pooler)
+- `JWT_SECRET` — signs referrer JWT cookies (`flent_ref_token`)
+- `ADMIN_JWT_SECRET` — signs admin JWT cookies (`flent_admin_token`)
+- `RESEND_API_KEY` — Resend dashboard → API Keys
+- `RESEND_FROM_EMAIL` — default `referrals@email.flent.in`
+
+**Required for WhatsApp (missing = WA silently skipped):**
+- `SUPERCHAT_API_KEY` — Superchat dashboard → Settings → API
+- `SUPERCHAT_WORKSPACE_ID` — same page
+
+**Optional (safe defaults exist):**
+- `NEXT_PUBLIC_APP_URL` — default `https://flent.in/referral-program`
+- `SUPERCHAT_TEMPLATE_OTP` — default `referral_otp_verification`
+- `HUBSPOT_WEBHOOK_SECRET`, `HUBSPOT_ACCESS_TOKEN`, `HUBSPOT_STAGE_AGREEMENT_SIGNED`, `HUBSPOT_STAGE_COMPLETED`
+- `TYPEFORM_WEBHOOK_SECRET`, `TYPEFORM_REFERRAL_CODE_FIELD_ID`
 
 ## Recent Changes
-- **CommTemplate DB fallback + WA OTP UI** (`b664702`): `getTemplate()` in `comms.ts` now catches all DB errors and returns in-memory defaults — fixes dashboard 500 and WA OTP failure when `CommTemplate` table is missing in prod; `getTemplateName` in `superchat.ts` same guard; login + signup OTP step updated with dual icon (mail + WA) and copy mentioning both channels
-- **Robust OTP + WhatsApp channel** (`c650374`): `resend.ts` now checks `{ error }` from `emails.send()` and throws (was silently swallowed); `sendOtpWhatsApp` added to `superchat.ts` using approved Meta auth template `referral_otp_verification` (1 var: OTP); `notifyOtp()` added to `notifications.ts` fires email + WA in parallel; auth routes use `notifyOtp` via `after()`
-- **DB fallback fix** (`c31d2c1`): `ReferralStatBand` wraps Prisma call in try/catch — build succeeds when DB unreachable at Vercel build time; falls back to `'500+'`
-- **Stat counter + hero redesign** (`7efd7f0`): scroll-triggered count-up animation in `ReferralStatCounter`; dashboard hero → circle avatar badge + tier popover; Instagram share added alongside WhatsApp
-- **Leaderboard + ambassador tiers** (`99145c6`): `AmbassadorTier` model, quarterly leaderboard, `leaderboardOptIn` on `Referrer`, admin Tiers tab, `ui_instagram_share_text` CommTemplate key
-- **Production DB**: migration `20260401025526_add_ambassador_leaderboard` was baselined + applied to Supabase on 2026-04-03. `CommTemplate` table may not exist in prod yet — `getTemplate()` falls back to in-memory defaults gracefully.
+- **Favicon fix** (`e018ca9`): replaced default Next.js `favicon.ico` with `src/app/icon.png` (Flent logo); removed manual `metadata.icons` from `layout.tsx` — Next.js App Router auto-generates correct `<link>` tags from file
+- **Supabase SSL + auth error handling** (`f458e41`): restored `ssl: { rejectUnauthorized: false }` in `prisma.ts` — was silently dropped in redesign commit, caused `DriverAdapterError` on every DB call in prod; added `try/catch` (was `try/finally`) to all 6 auth form handlers in login + signup pages so API errors surface to the user instead of silently resetting the button
+- **CommTemplate DB fallback + WA OTP UI** (`b664702`): `getTemplate()` in `comms.ts` catches all DB errors and returns in-memory defaults; `getTemplateName` in `superchat.ts` same guard; login + signup OTP step updated with dual icon (mail + WA) and copy mentioning both channels
+- **Robust OTP + WhatsApp channel** (`c650374`): `resend.ts` checks `{ error }` from `emails.send()` and throws; `sendOtpWhatsApp` added using Meta auth template `referral_otp_verification`; `notifyOtp()` fires email + WA in parallel via `after()`
+- **Stat counter + hero redesign** (`7efd7f0`): scroll-triggered count-up in `ReferralStatCounter`; dashboard hero → circle avatar badge + tier popover; Instagram share added
+- **Production DB**: migration `20260401025526_add_ambassador_leaderboard` applied to Supabase on 2026-04-03. All env vars now set in Vercel (incl. `SUPERCHAT_API_KEY`, `SUPERCHAT_WORKSPACE_ID`, `JWT_SECRET`, `ADMIN_JWT_SECRET`).
 
 ## What's Built
 - **OTP auth**: email OTP + WhatsApp OTP for referrers (parallel via `notifyOtp()`), password for admins. `after()` built-in in Next.js 16 — no `experimental.after` flag.
 - **Button pattern**: all buttons need `btn-base` + variant (e.g. `btn-base btn-pastel-violet`). `btn-base` provides cursor, flex, hover/active. Variant alone has no interactivity.
-- **Comms system**: 14 CommTemplate keys across EMAIL/WHATSAPP/UI; auto-seeded; admin-editable without deploy.
+- **Comms system**: 15 CommTemplate keys across EMAIL/WHATSAPP/UI; auto-seeded; admin-editable without deploy.
 - **Admin panel**: 6 tabs. Neo-brutalist design — logo pill + "Admin" badge in nav; pill-shaped tab bar; `1.5px solid var(--brand)` + `2px 2px 0 var(--brand)` hard shadow on all cards.
 - **Dashboard hero**: circle 72px avatar (initial letter, tier-colored ring) → click opens inline tier ladder popover. "Hey, {Name}" serif greeting. Code box. WhatsApp + Instagram share side-by-side (2-col grid). No description text — clean.
 - **Dashboard quarterly standing**: rank widget, top-5 leaderboard list (opted-in names, anonymous otherwise), opt-in toggle with pill switch.
@@ -106,6 +118,7 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 - **Ambassador tiers are derived, not stored** — no `currentTier` column on `Referrer`. Always computed from `lifetimeCompletedCount` vs tier thresholds at read time.
 - **Quarterly leaderboard** — uses calendar quarters (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec). Computed from `Referral.completedAt`. Public endpoint, no auth required.
 - **OTP delivery**: always use `notifyOtp()` from `notifications.ts` — fires email + WA in parallel, logs to `NotificationLog`. Never call `sendOtpEmail` directly from route handlers.
+- **Auth form handlers**: use `try/catch/finally` not `try/finally`. Also use `res.json().catch(() => ({}))` — when API returns a non-JSON 500, bare `res.json()` throws, `finally` silently resets the button, user sees nothing. The catch block must call `setError()`.
 - **`getTemplate()` never throws** — falls back to in-memory `DEFAULT_TEMPLATES` if DB unavailable. Safe to call from server components and route handlers without try/catch.
 - **WhatsApp OTP template**: Meta auth template `referral_otp_verification`, 1 variable (`{{1}}` = OTP). Approved 2026-04-03. Superchat UI doesn't support auth templates — configured directly via Meta dashboard.
 - Resend lazily initialized — never instantiate at module level; fire via `after()` in route handlers
