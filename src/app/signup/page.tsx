@@ -50,13 +50,15 @@ export default function SignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.error ?? 'Something went wrong')
+        setError((data as { error?: string }).error ?? 'Something went wrong. Please try again.')
         return
       }
       setStep('otp')
       startResendCooldown()
+    } catch {
+      setError('Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -72,13 +74,15 @@ export default function SignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.error ?? 'Could not resend. Please try again.')
+        setError((data as { error?: string }).error ?? 'Could not resend. Please try again.')
         return
       }
       setResendMsg('Code resent to your email & WhatsApp.')
       startResendCooldown()
+    } catch {
+      setError('Could not resend. Please try again.')
     } finally {
       setResendLoading(false)
     }
@@ -94,13 +98,15 @@ export default function SignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, otp }),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.error ?? 'Verification failed')
+        setError((data as { error?: string }).error ?? 'Verification failed. Please try again.')
         return
       }
-      setReferralCode(data.referrer.referralCode)
+      setReferralCode((data as { referrer: { referralCode: string } }).referrer.referralCode)
       setStep('success')
+    } catch {
+      setError('Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
