@@ -20,11 +20,6 @@ export const metadata: Metadata = {
   title: 'Flent Referral Program — Refer Friends, Earn Rewards',
   description:
     'Join the Flent Referral Program. Share your unique code with friends looking for quality co-living in Bangalore and earn exciting rewards for every successful referral.',
-  icons: {
-    icon: '/icon.png',
-    shortcut: '/icon.png',
-    apple: '/icon.png',
-  },
   openGraph: {
     title: 'Flent Referral Program',
     description: 'Refer friends to Flent and unlock amazing rewards.',
