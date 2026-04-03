@@ -2,8 +2,13 @@ import { getTemplate } from '@/lib/comms'
 import ReferralStatCounter from './ReferralStatCounter'
 
 export default async function ReferralStatBand() {
-  const tpl = await getTemplate('ui_community_stat')
-  const stat = tpl?.body?.trim() ?? '500+'
+  let stat = '500+'
+  try {
+    const tpl = await getTemplate('ui_community_stat')
+    stat = tpl?.body?.trim() ?? '500+'
+  } catch {
+    // DB unavailable at build time — use fallback
+  }
 
   return (
     <section
