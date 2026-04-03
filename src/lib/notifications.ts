@@ -88,7 +88,8 @@ export async function notifyOtp(params: {
   }
 
   if (emailResult.status === 'rejected') console.error('[Notify] OTP email failed:', emailResult.reason)
-  if (waResult.status === 'rejected') console.error('[Notify] OTP WhatsApp failed:', waResult.reason)
+  // WhatsApp OTP is best-effort — log as info until Meta Cloud API access is confirmed working
+  if (waResult.status === 'rejected') console.log('[Notify] OTP WhatsApp skipped:', (waResult.reason as Error)?.message ?? waResult.reason)
 }
 
 export async function notifyWelcome(referrer: Referrer, referralCode: string): Promise<void> {
