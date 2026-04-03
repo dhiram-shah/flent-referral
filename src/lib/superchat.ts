@@ -130,6 +130,52 @@ export async function sendOtpWhatsApp(phone: string, otp: string): Promise<void>
   await sendWhatsAppMessage(phone, template, { '1': otp })
 }
 
+/**
+ * Send OTP via Meta Cloud API directly (bypasses Superchat).
+ * Required for authentication-category templates which BSPs don't support.
+ * Needs WHATSAPP_ACCESS_TOKEN + WHATSAPP_PHONE_NUMBER_ID env vars.
+ */
+export async function sendOtpMetaDirect(phone: string, otp: string): Promise<void> {
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
+
+  if (!accessToken || !phoneNumberId) {
+    throw new Error('[Meta WA] Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID')
+  }
+
+  const normalizedPhone = normalizePhone(phone)
+  const templateName = process.env.SUPERCHAT_TEMPLATE_OTP ?? 'referral_otp_verification'
+
+  const res = await fetch(`https://graph.facebook.com/v17.0/${phoneNumberId}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: normalizedPhone,
+      type: 'template',
+      template: {
+        name: templateName,
+        language: { code: 'en' },
+        components: [
+          {
+            type: 'body',
+            parameters: [{ type: 'text', text: otp }],
+          },
+        ],
+      },
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`[Meta WA] API error (${res.status}): ${err}`)
+  }
+}
+
 export async function sendRedemptionFulfilledWhatsApp(
   phone: string,
   referrerName: string,

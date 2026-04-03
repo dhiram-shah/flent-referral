@@ -67,9 +67,13 @@ export async function notifyOtp(params: {
   otp: string
   referrerId?: string
 }): Promise<void> {
+  const waFn = process.env.WHATSAPP_ACCESS_TOKEN
+    ? () => wa.sendOtpMetaDirect(params.phone, params.otp)
+    : () => wa.sendOtpWhatsApp(params.phone, params.otp)
+
   const [emailResult, waResult] = await Promise.allSettled([
     email.sendOtpEmail(params.email, params.name, params.otp),
-    wa.sendOtpWhatsApp(params.phone, params.otp),
+    waFn(),
   ])
 
   if (params.referrerId) {
