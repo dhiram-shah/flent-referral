@@ -315,8 +315,13 @@ export default function AdminDashboard() {
                     {referrers.map((r) => (
                       <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
                         <td style={{ padding: '12px 16px' }}>
-                          <p style={{ fontWeight: 600, fontSize: 14 }}>{r.name}</p>
-                          <p style={{ fontSize: 12, color: 'var(--muted)' }}>{r.email}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                            <p style={{ fontWeight: 600, fontSize: 14, margin: 0 }}>{r.name}</p>
+                            {r.isTenant && (
+                              <span style={{ background: '#D1FAE5', color: '#059669', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 99, letterSpacing: 0.3 }}>TENANT</span>
+                            )}
+                          </div>
+                          <p style={{ fontSize: 12, color: 'var(--muted)', margin: 0 }}>{r.email}</p>
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           <code style={{ background: 'var(--bg)', padding: '3px 8px', borderRadius: 6, fontSize: 12 }}>{r.referralCode}</code>
