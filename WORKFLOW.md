@@ -10,7 +10,7 @@
 |-------|------|
 | **Referrer** | Existing/prospective Flent tenant who shares their code |
 | **Referee** | Friend who fills the Typeform inquiry using a referral code |
-| **Admin** | Flent ops team — manages fulfillment, reviews, disqualifications |
+| **Admin / Marketing** | Flent ops team — manages fulfillment, reviews, configures rewards, tiers, and comms copy |
 | **Typeform** | Inquiry form where referees enter the referral code |
 | **HubSpot** | CRM where sales manages deals and tenant lifecycle |
 
@@ -23,6 +23,7 @@ Referrer → /signup form → POST /api/auth/signup
          → OTP email sent (Resend, async via after())
          → Referrer enters OTP → POST /api/auth/verify-otp
          → Referrer record created + ReferrerProgress(streak=0, lifetime=0)
+         → leaderboardOptIn defaults to false
          → Unique referral code generated (name-based slug + collision retry)
          → JWT cookie set (flent_ref_token, 30 days)
          → Welcome notification fired (email + WhatsApp, parallel, async)
@@ -42,47 +43,61 @@ Referrer → /signup form → POST /api/auth/signup
 ```
 Referrer → /login → enters email → POST /api/auth/login
          → validates email exists in DB
-         → OTP sent via Resend
+         → OTP sent via Resend (async after())
          → enters OTP → POST /api/auth/verify-login
          → JWT cookie refreshed
          → window.location.href = /dashboard
 ```
 
-**Note:** Login and signup share the same OTP cooldown system. Proxy (`src/proxy.ts`) guards `/dashboard` — must have valid `flent_ref_token` cookie.
+Proxy (`src/proxy.ts`) guards `/dashboard` — must have valid `flent_ref_token` cookie. In `NODE_ENV !== 'production'`, proxy is bypassed and stub data is returned.
 
 ---
 
 ## Flow 3 — Tenant Auto-Enrollment (HubSpot → Referrer)
-
-Existing tenants are automatically enrolled as referrers when HubSpot marks them as customers.
 
 ```
 HubSpot: contact.creation  OR  lifecyclestage → "customer"
          → POST /api/webhooks/hubspot (HMAC-SHA256 verified, 5-min timestamp window)
          → Fetch contact from HubSpot API (firstname, lastname, email, phone)
          → Check: already a referrer? → skip
-         → Create Referrer (isTenant: true) + ReferrerProgress + unique referral code
+         → Create Referrer (isTenant: true, leaderboardOptIn: false) + ReferrerProgress + unique code
          → Welcome notification (email + WhatsApp)
 ```
 
-Tenants never need to sign up manually — they receive their code and can log in via `/login`.
+Tenants never need to sign up manually — they receive their code by notification and log in via `/login`.
 
 ---
 
-## Flow 4 — Code Sharing
+## Flow 4 — Code Sharing (WhatsApp + Instagram)
 
 ```
-Referrer dashboard → copies code to clipboard  OR  clicks "Share on WhatsApp"
-WhatsApp message: "...use my referral code *{CODE}* when you enquire..."
+Referrer dashboard → opens in two ways:
+
+WhatsApp:
+  → clicks "WhatsApp" button
+  → window.open(`https://wa.me/?text=${encodeURIComponent(data.waShareText)}`)
+  → waShareText rendered server-side in /api/referrers/me with:
+      referralCode, lifetimeCount, tierBrag
+  → template: ui_wa_share_text (editable in Admin → Comms)
+  → includes: referral count, code, tier brag line (if tier earned)
+
+Instagram:
+  → clicks "Instagram" button
+  → tries navigator.share({ text: igShareText }) [mobile Web Share API]
+  → if unavailable/cancelled: copies igShareText to clipboard + opens instagram.com
+  → shows "Caption copied!" for 3s
+  → igShareText rendered server-side same as WA but uses ui_instagram_share_text template
+  → includes: referral count, code, @flentliving mention, tier brag
 ```
 
-The code is a short alphanumeric slug (e.g. `RAHUL7F`). It is entered by the referee directly in the Typeform inquiry form.
+**Share text includes dynamically:**
+- `{{referralCode}}` — user's unique code (e.g. `PRIYA7`)
+- `{{lifetimeCount}}` — total completed referrals ever (e.g. `5`)
+- `{{tierBrag}}` — `""` if no tier; `"\n\nAs a Flent Ambassador, I've personally vouched for these homes."` if tier earned
 
 ---
 
 ## Flow 5 — Friend Inquiry (Referral Created)
-
-When a friend submits the Typeform inquiry form with a referral code:
 
 ```
 Referee → fills Typeform (name, phone, email, referral code field)
@@ -92,15 +107,15 @@ Referee → fills Typeform (name, phone, email, referral code field)
 ```
 
 **Validations (in order):**
-1. No referral code entered → silently skip (not a referred lead, that's OK)
+1. No referral code entered → silently skip
 2. Code not found / referrer inactive / disqualified → skip
-3. Self-referral (referee phone or email matches referrer) → create Referral with `isDisqualified: true`, note: "Self-referral detected"
+3. Self-referral (referee phone or email matches referrer) → create Referral with `isDisqualified: true`
 4. Duplicate phone (same phone already has a referral) → skip
 
 **On success:**
 ```
 → Referral created (status: INTERESTED, referrerId linked)
-→ Notification: referrer notified via email + WhatsApp ("Someone interested!")
+→ Notification: referrer notified via email + WhatsApp
 → Dashboard: referral appears as "Interested"
 ```
 
@@ -108,95 +123,157 @@ Referee → fills Typeform (name, phone, email, referral code field)
 
 ## Flow 6 — Deal Progression via HubSpot
 
-All referral status transitions are driven by deal stage changes in HubSpot CRM. The sales team never touches the referral engine — it updates automatically.
-
 ### 6a — Agreement Signed
 
 ```
-HubSpot: deal stage → "agreement_signed"  (HUBSPOT_STAGE_AGREEMENT_SIGNED env var)
+HubSpot: deal stage → "agreement_signed"
        → POST /api/webhooks/hubspot
-       → Lookup: Referral by hubspotId (deal ID)
+       → Lookup: Referral by hubspotId
        → Guard: status must be INTERESTED, not disqualified
-       → Update: Referral status → AGREEMENT_SIGNED, signedAt = now
+       → Update: Referral → AGREEMENT_SIGNED, signedAt = now
        → Notification: referrer notified via email + WhatsApp
-       → Dashboard: referral shows "Agreement Signed"
 ```
 
-### 6b — Tenancy Completed (Move-In)
-
-This is the key earning event — when a referred friend actually moves in.
+### 6b — Tenancy Completed (Move-In + Earning Event)
 
 ```
-HubSpot: deal stage → "tenancy_completed"  (HUBSPOT_STAGE_COMPLETED env var)
+HubSpot: deal stage → "tenancy_completed"
        → POST /api/webhooks/hubspot
        → Lookup: Referral by hubspotId
        → Guard: not already COMPLETED, not disqualified
-       → Transaction (atomic):
-           Referral status → COMPLETED, completedAt = now
+       → Atomic transaction:
+           Referral → COMPLETED, completedAt = now
            ReferrerProgress: currentStreakCount += 1, lifetimeCompletedCount += 1
-       → Check: does new streakCount exactly match any MilestoneConfig.referralsRequired?
+       → Check: does new streakCount match any MilestoneConfig.referralsRequired?
        → Notification: referrer notified via email + WhatsApp
-           — if milestone unlocked: message includes reward name
-           — if not: celebrates the move-in without mentioning a specific reward
-       → Dashboard: referral shows "Completed", eligible milestone cards become claimable
+           — milestone unlocked: message includes reward name
+           — no milestone yet: celebrates move-in only
+       → Dashboard: referral shows "Completed"
+       → Ambassador tier re-evaluated on next dashboard load (from lifetimeCompletedCount)
+       → Quarterly leaderboard position updated (live from completedAt)
 ```
 
-**Streak logic:**
+**Streak vs lifetime:**
 - `currentStreakCount` = referrals completed since last redemption (resets on claim)
-- `lifetimeCompletedCount` = all-time completed count (never resets)
+- `lifetimeCompletedCount` = all-time total (never resets) — powers ambassador tier
 
 ---
 
 ## Flow 7 — Reward Redemption
 
-Once a referrer's streak meets or exceeds a milestone's `referralsRequired`, that milestone is claimable.
-
 ```
-Dashboard: milestone card shows "Unlocked" (eligible state)
-         → Referrer hovers → "Claim now →" appears
-         → Referrer clicks → modal opens for that specific milestone
-         → Modal shows: tier, reward name, value, streak-reset warning
-         → Referrer clicks "Claim this reward" → POST /api/redemptions
-```
-
-**API validations:**
-1. Auth check (JWT cookie)
-2. Milestone exists
-3. No existing PENDING redemption (only one in-flight at a time)
-4. streak >= milestone.referralsRequired
-5. If `requiresExtraInfo: true` → extraInfo must be provided
-
-**On success (atomic transaction):**
-```
-→ Redemption created (status: PENDING, milestoneId, referrerId)
-→ ReferrerProgress: currentStreakCount = 0, lastResetAt = now
-→ Notification: redemption confirmation via email + WhatsApp
-→ Dashboard: milestone shows "Pending", other eligible cards show "Unlocked · blocked"
+Dashboard: milestone card shows "Unlocked"
+         → hover → "Claim now →" appears
+         → click → modal (tier info, reward name, streak-reset warning)
+         → "Claim this reward" → POST /api/redemptions
+         → Validations: auth, milestone exists, no pending redemption, streak >= required
+         → Atomic transaction:
+             Redemption created (status: PENDING)
+             ReferrerProgress: currentStreakCount = 0, lastResetAt = now
+         → Notification: redemption confirmation (email + WhatsApp)
+         → Dashboard: milestone shows "Pending"; other eligible cards show "Unlocked · blocked"
 ```
 
-### 7a — Admin Fulfilment
+### 7a — Admin Fulfillment
 
 ```
-Admin → /admin dashboard → views pending redemptions
+Admin → /admin → Redemptions tab → views pending queue
       → Fulfils reward (physical/digital delivery)
-      → Marks redemption status → FULFILLED via PATCH /api/admin/redemptions/[id]
-      → Dashboard history strip: shows fulfilled reward with date + value
-      → Stats: "Rewards claimed" counter increments
+      → PATCH /api/admin/redemptions/[id] → status → FULFILLED
+      → Dashboard history strip: fulfilled reward with date + value
+```
+
+---
+
+## Flow 8 — Ambassador Tier Assignment
+
+Tiers are **never stored on the Referrer record** — always computed at read time.
+
+```
+GET /api/referrers/me (or /api/leaderboard)
+   → getAllTiers() → fetches AmbassadorTier table, seeds defaults if empty
+     Defaults: Scout (1+), Connector (3+), Ambassador (6+)
+   → computeTier(lifetimeCompletedCount, tiers)
+     → sorts tiers descending by minReferrals
+     → returns first tier where lifetimeCount >= minReferrals
+     → returns null if below Scout threshold
+   → returned in response as: { name, colorToken }
+   → also returns allTiers list (for tier ladder popover in dashboard)
+   → tierBrag computed: "" or "\n\nAs a Flent {tier.name}..."
+```
+
+Admin changes to tier thresholds (via Admin → Tiers tab) take effect immediately on the next API call — no migration or cache invalidation needed.
+
+---
+
+## Flow 9 — Leaderboard Opt-In / Opt-Out
+
+```
+Dashboard: Quarterly Standing card → "Show my name on the leaderboard" toggle
+         → user clicks toggle
+         → PATCH /api/referrers/me { leaderboardOptIn: true/false }
+         → Referrer.leaderboardOptIn updated in DB
+         → GET /api/leaderboard refetched → name appears/disappears in list
+         → Other referrers see first name (if opted-in) or "Anonymous"
+```
+
+Default is `false` — consent required. Admins can also bulk opt-in known power referrers via SQL (see `docs/leaderboard-backfill.md`).
+
+---
+
+## Flow 10 — Quarterly Leaderboard Computation
+
+```
+GET /api/leaderboard
+   → getCurrentQuarter() → { start, end, label, resetsOn }
+     Calendar quarters: Q1=Jan-Mar, Q2=Apr-Jun, Q3=Jul-Sep, Q4=Oct-Dec
+   → prisma.referral.groupBy(['referrerId'])
+     WHERE status=COMPLETED, completedAt in [start, end), isDisqualified=false
+     ORDER BY _count DESC
+   → top 20 referrerIds
+   → fetch Referrer (leaderboardOptIn, name) for those 20
+   → fetch ReferrerProgress (lifetimeCount) for tier badge computation
+   → build entries: rank, displayName (first name if opted-in, else null), quarterlyCount, tierName
+   → Response: { quarter, resetsOn, totalParticipants, entries[] }
+
+GET /api/referrers/me (auth-required)
+   → also computes: userQuarterlyEntry position in sorted groups
+   → returns: { rank, total, quarterlyCount, quarter, resetsOn }
+   → dashboard shows "You're #N of X referrers this quarter"
+```
+
+---
+
+## Flow 11 — Marketing Updates Comms Copy
+
+All copy changes require zero engineering involvement:
+
+```
+Marketing → Admin → Comms tab
+          → edit any of 14 templates (email body, WA template name, UI text)
+          → PATCH /api/admin/comms/[key] { subject, body }
+          → CommTemplate updated in DB, updatedBy/updatedAt recorded
+          → next send uses new template (no cache — getTemplate() fetches fresh from DB)
+
+Marketing → Admin → Comms → "Community Stat (Home Page)"
+          → edit body to "1,200+" or whatever the current count is
+          → ReferralStatBand server component picks up on next page render
+          → home page shows updated count (no deploy needed)
 ```
 
 ---
 
 ## Notification Matrix
 
-| Event | Trigger | Email | WhatsApp |
-|-------|---------|-------|----------|
-| Welcome | Signup or auto-enroll | ✓ | ✓ |
-| Referral interested | Typeform submission | ✓ | ✓ |
-| Agreement signed | HubSpot deal stage | ✓ | ✓ |
-| Tenancy completed | HubSpot deal stage | ✓ | ✓ (includes reward name if unlocked) |
-| Redemption confirmed | Claim submitted | ✓ | ✓ |
+| Event | Trigger | Email template | WhatsApp template |
+|-------|---------|----------------|-------------------|
+| Welcome | Signup or auto-enroll | `email_welcome` | `wa_template_welcome` |
+| Referral interested | Typeform submission | `email_referral_interested` | `wa_template_interested` |
+| Agreement signed | HubSpot deal stage | `email_referral_signed` | `wa_template_signed` |
+| Tenancy completed | HubSpot deal stage | `email_referral_completed` | `wa_template_completed` |
+| Redemption confirmed | Claim submitted | `email_redemption_confirmed` | `wa_template_redeemed` |
 
-All notifications fire via `src/lib/notifications.ts` — email (Resend) + WhatsApp (Superchat) in parallel using `Promise.allSettled`. Results logged to `NotificationLog` table. Failures are logged but never throw — they do not block the main flow.
+All notifications fire via `src/lib/notifications.ts` — email (Resend) + WhatsApp (Superchat) in parallel via `Promise.allSettled`. Failures are logged to `NotificationLog` but never throw.
 
 ---
 
@@ -207,7 +284,7 @@ All notifications fire via `src/lib/notifications.ts` — email (Resend) + Whats
 ```
 INTERESTED → AGREEMENT_SIGNED → COMPLETED
      ↓               ↓               ↓
-(isDisqualified = true at any stage — set by admin or self-referral detection)
+(isDisqualified = true at any stage — admin or self-referral detection)
 ```
 
 ### Redemption Status
@@ -220,8 +297,22 @@ PENDING → FULFILLED
 ### Referrer Progress
 
 ```
-currentStreakCount: 0 → +1 per COMPLETED referral → reset to 0 on redemption
+currentStreakCount:      0 → +1 per COMPLETED referral → reset to 0 on redemption
 lifetimeCompletedCount: 0 → +1 per COMPLETED referral → never resets
+```
+
+### Ambassador Tier (derived, not stored)
+
+```
+null (< 1 lifetime) → Scout (1+) → Connector (3+) → Ambassador (6+)
+Thresholds configurable in Admin → Tiers. Computed fresh on every /api/referrers/me call.
+```
+
+### Leaderboard Opt-In
+
+```
+false (default) → true (user consents via dashboard toggle or admin SQL bulk update)
+                → false (user opts out anytime)
 ```
 
 ---
@@ -230,14 +321,15 @@ lifetimeCompletedCount: 0 → +1 per COMPLETED referral → never resets
 
 | Check | Where | Behaviour |
 |-------|-------|-----------|
-| Self-referral (phone or email match) | Typeform webhook | Creates disqualified referral — logged but no notification |
-| Duplicate referee phone | Typeform webhook | Silent skip — first referrer keeps the credit |
+| Self-referral (phone or email match) | Typeform webhook | Creates disqualified referral — logged, no notification |
+| Duplicate referee phone | Typeform webhook | Silent skip — first referrer keeps credit |
 | Invalid/inactive referral code | Typeform webhook | Silent skip — never blocks form submission |
 | OTP cooldown (60s) | Signup + Login API | 429 with `cooldown: N` seconds remaining |
 | OTP max attempts | `verifyOtp` | Returns `expired` error after N failures |
 | Pending redemption exists | Redemptions API | 409 — cannot claim while one is in-flight |
 | Disqualified referrer | Signup, Typeform, HubSpot | Blocked at each entry point |
 | Expired HubSpot webhook | HubSpot webhook | Rejected if timestamp > 5 minutes old |
+| Admin auth on tier/comms APIs | All `/api/admin/*` routes | 401 if no valid `flent_admin_token` cookie |
 
 ---
 
@@ -254,3 +346,4 @@ lifetimeCompletedCount: 0 → +1 per COMPLETED referral → never resets
 | `RESEND_FROM_EMAIL` | Email sender (`referrals@email.flent.in`) |
 | `DATABASE_URL` | Supabase Session Pooler, IPv4, port 5432 |
 | `JWT_SECRET` | Signing referrer + admin JWT tokens |
+| `NEXT_PUBLIC_APP_URL` | Dashboard URL used in email links (optional, defaults to flent.in/referral-program) |

@@ -1220,11 +1220,17 @@ body {
 }
 .fb-tall .fb-card-text { margin-top: 10px; }
 .fb-stack {
-  display: grid;
-  grid-template-rows: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
+.fb-stack > * {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
 .fb-compact {
+  flex: 1;
   border: 2px solid var(--blue-12);
   border-radius: var(--radius-3xl);
   box-shadow: var(--blue-12) -4px 4px 0px;
