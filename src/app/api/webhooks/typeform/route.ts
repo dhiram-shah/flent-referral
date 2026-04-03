@@ -17,6 +17,7 @@ function verifySignature(body: string, signature: string | null): boolean {
   const secret = process.env.TYPEFORM_WEBHOOK_SECRET
   if (!secret || !signature) return false
   const expected = `sha256=${crypto.createHmac('sha256', secret).update(body).digest('base64')}`
+  if (expected.length !== signature.length) return false
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
 }
 

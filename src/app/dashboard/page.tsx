@@ -121,6 +121,7 @@ export default function DashboardPage() {
         fetch('/api/leaderboard'),
       ])
       if (meRes.status === 401) { window.location.href = '/signup'; return }
+      if (!meRes.ok) { setError('Failed to load dashboard. Please refresh.'); return }
       const json = await meRes.json()
       setData(json)
       if (lbRes.ok) {
@@ -251,7 +252,12 @@ export default function DashboardPage() {
 
   if (loading) return <DashboardLoader />
 
-  if (!data) return null
+  if (!data) return error ? (
+    <main style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+      <p style={{ color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>{error}</p>
+      <button className="btn-base btn-pastel-violet" style={{ padding: '8px 20px', borderRadius: 999, fontSize: 14 }} onClick={() => { setError(''); setLoading(true); fetchData() }}>Try again</button>
+    </main>
+  ) : null
 
   const { referrer, progress, milestones, referrals } = data
   const streak = progress.streakCount
