@@ -165,14 +165,22 @@ export async function sendOtpMetaDirect(phone: string, otp: string): Promise<voi
             type: 'body',
             parameters: [{ type: 'text', text: otp }],
           },
+          {
+            type: 'button',
+            sub_type: 'url',
+            index: '0',
+            parameters: [{ type: 'text', text: otp }],
+          },
         ],
       },
     }),
   })
 
+  const body = await res.text()
+  console.log(`[Meta WA] status=${res.status} phone=${normalizedPhone} response=${body}`)
+
   if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`[Meta WA] API error (${res.status}): ${err}`)
+    throw new Error(`[Meta WA] API error (${res.status}): ${body}`)
   }
 }
 
