@@ -8,6 +8,8 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 - Prisma 7.5 (`@prisma/adapter-pg` + `PrismaPg`) · PostgreSQL via Supabase Session Pooler (IPv4)
 - Resend (`after()` for async email) · Superchat (WhatsApp) · HubSpot webhooks · Typeform webhooks
 - Tailwind CSS v4 · Zin Display Condensed via `next/font/local` (`--font-serif`) · Vercel
+- Framer Motion · Lenis (smooth scroll) · Matter.js · canvas-confetti (home page animations)
+- `zod` for input validation · `bcryptjs` for admin password · `jsonwebtoken` for JWT
 
 ## Architecture
 - **Proxy** (`src/proxy.ts`) guards `/dashboard` + `/admin` — use `window.location.href` for auth-sensitive navigation (not `router.push`) so proxy reads fresh cookies
@@ -19,33 +21,40 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 - **Ambassador tiers** (`src/lib/ambassadorTiers.ts`): computed from `lifetimeCompletedCount` against `AmbassadorTier` table; auto-seeds Scout/Connector/Ambassador defaults; fully admin-configurable
 - **Leaderboard**: quarterly (calendar Q), live-computed from `Referral.completedAt`; opt-in first-name display; rank data returned in `/api/referrers/me`; public list from `/api/leaderboard`
 - **Community stat** (`ReferralStatBand`): server component fetches `ui_community_stat` CommTemplate; scroll-triggered counter animation in `ReferralStatCounter` client component
+- **Tenant auto-enrollment**: HubSpot `customer_type=Tenant` webhook creates referrer with `isTenant=true`; upgrades existing referrer if already signed up
 
 ## Key Files
-- `prisma/schema.prisma` — data model (Referrer, Referral, MilestoneConfig, Redemption, ReferrerProgress, OtpSession, AdminUser, NotificationLog, CommTemplate, **AmbassadorTier**)
+- `prisma/schema.prisma` — data model (Referrer, Referral, MilestoneConfig, Redemption, ReferrerProgress, OtpSession, AdminUser, NotificationLog, CommTemplate, AmbassadorTier)
 - `prisma.config.ts` — Prisma v7 config (DATABASE_URL here, NOT in schema datasource block)
-- `src/lib/prisma.ts` — PrismaClient with PrismaPg adapter + `ssl: { rejectUnauthorized: false }` (DO NOT remove — required for Supabase)
+- `src/lib/prisma.ts` — PrismaClient with PrismaPg adapter + `ssl: { rejectUnauthorized: false }` (DO NOT remove — required for Supabase); `pg.Pool max: 1`
 - `src/lib/otp.ts` — OTP creation with 60s cooldown guard
 - `src/lib/resend.ts` — email sending; reads subject+body from `CommTemplate` via `src/lib/comms.ts`
-- `src/lib/superchat.ts` — WhatsApp via Superchat API; reads template names from `CommTemplate`
-- `src/lib/comms.ts` — **CommTemplate store**: `getTemplate(key)`, `getAllTemplates()`, `renderTemplate(str, vars)`. 15 default keys. Never throws — falls back to in-memory defaults.
+- `src/lib/superchat.ts` — WhatsApp via Superchat API; `sendOtpMetaDirect()` for Meta Cloud API direct (auth templates); reads template names from `CommTemplate`
+- `src/lib/comms.ts` — **CommTemplate store**: `getTemplate(key)`, `getAllTemplates()`, `renderTemplate(str, vars)`. 15 default keys. Both never throw — fall back to in-memory defaults if table missing.
 - `src/lib/ambassadorTiers.ts` — `getAllTiers()` (fetches + seeds defaults), `computeTier(lifetimeCount, tiers)`, `getCurrentQuarter()`, `TIER_COLORS` map
 - `src/lib/notifications.ts` — fires email + WhatsApp in parallel, logs to DB
 - `src/app/api/admin/comms/route.ts` — GET lists + seeds all comms templates
 - `src/app/api/admin/comms/[key]/route.ts` — PATCH updates a template; records `updatedBy`
 - `src/app/api/admin/ambassador-tiers/route.ts` — GET all tiers, POST create
 - `src/app/api/admin/ambassador-tiers/[id]/route.ts` — PATCH update, DELETE
+- `src/app/api/admin/referrals/route.ts` — GET all referrals (admin-auth, up to 500, optional `?status=` filter)
+- `src/app/api/admin/referrers/[id]/route.ts` — PATCH referrer (isActive, isDisqualified, isTenant)
 - `src/app/api/leaderboard/route.ts` — GET quarterly top 20; public endpoint; opted-in names only
 - `src/app/api/referrers/me/route.ts` — GET profile + milestones + leaderboard data + ambassador tier + share texts; PATCH updates `leaderboardOptIn`
 - `src/app/admin/components/CommsTab.tsx` — admin UI for editing all comms templates
 - `src/app/admin/components/TiersTab.tsx` — admin UI for ambassador tier CRUD
-- `src/app/admin/page.tsx` — 6-tab admin dashboard (Overview, Referrers, Redemptions, Milestones, Tiers, Comms)
+- `src/app/admin/page.tsx` — 7-tab admin dashboard (Overview, Referrers, Referrals, Redemptions, Milestones, Tiers, Comms); Referrals tab lazy-loads on first visit
+- `src/components/PageLoader.tsx` — shared dog loader (DogThinking SVG + rotating messages); used by both dashboard and admin via `<PageLoader messages={string[]} />`
 - `src/app/dashboard/page.tsx` — referrer dashboard (circle avatar badge, tier popover, code box, WhatsApp + Instagram share, quarterly standing, milestone journey, referrals list)
 - `src/components/ReferralStatBand.tsx` — server component; fetches `ui_community_stat`; wraps `ReferralStatCounter`
 - `src/components/ReferralStatCounter.tsx` — client component; IntersectionObserver scroll-triggered count-up animation (double-RAF, inline `el.style.*`)
-- `src/app/api/webhooks/hubspot/route.ts` — tenant enrollment + referral status transitions
-- `src/app/globals.css` — design tokens, `.btn-base`, `.btn-pill*`, `.btn-pastel-*`, `.btn-pill-white`, marquee + ms-glow-pulse animations
+- `src/app/api/webhooks/hubspot/route.ts` — contact-based tenant enrollment + referral status transitions; also handles `customer_type=Tenant` for auto-enrollment
+- `src/app/api/cron/check-moveins/route.ts` — daily cron (01:00 UTC); sweeps AGREEMENT_SIGNED referrals, checks HubSpot for payments + move-in date passed
+- `vercel.json` — Vercel Cron schedule for check-moveins (`0 1 * * *`)
+- `src/app/globals.css` — design tokens, `.btn-base`, `.btn-pill*`, `.btn-pastel-*`, `.btn-pill-white`, marquee + ms-glow-pulse + dog-bounce + dot-flash animations
 - `src/app/fonts/ZinDisplay.otf` — local serif font
 - `docs/leaderboard-backfill.md` — SQL guide for backfilling historical referral data into leaderboard + ambassador tiers
+- `docs/TEAM_HANDOFF.md` — handoff notes for team context on integration decisions
 
 ## CommTemplate Keys (15 total)
 | Key | Channel | Variables |
@@ -78,25 +87,33 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 - `SUPERCHAT_API_KEY` — Superchat dashboard → Settings → API
 - `SUPERCHAT_WORKSPACE_ID` — same page
 
+**Required for HubSpot integration:**
+- `HUBSPOT_WEBHOOK_SECRET` — Private App → Webhooks tab → "Secret" field; used to verify incoming webhook signatures
+- `HUBSPOT_ACCESS_TOKEN` — Private App → Auth tab → Access Token; used to fetch contact details after webhook events
+- `CRON_SECRET` — any random secret (e.g. `openssl rand -hex 32`); secures the `/api/cron/check-moveins` endpoint
+
 **Optional (safe defaults exist):**
 - `NEXT_PUBLIC_APP_URL` — default `https://flent.in/referral-program`
 - `SUPERCHAT_TEMPLATE_OTP` — default `referral_otp_verification`
-- `HUBSPOT_WEBHOOK_SECRET`, `HUBSPOT_ACCESS_TOKEN`, `HUBSPOT_STAGE_AGREEMENT_SIGNED`, `HUBSPOT_STAGE_COMPLETED`
 - `TYPEFORM_WEBHOOK_SECRET`, `TYPEFORM_REFERRAL_CODE_FIELD_ID`
+- `WHATSAPP_ACCESS_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID` — Meta Cloud API direct for OTP (parked; needs Business-type Meta app)
 
 ## Recent Changes
-- **Favicon fix** (`e018ca9`): replaced default Next.js `favicon.ico` with `src/app/icon.png` (Flent logo); removed manual `metadata.icons` from `layout.tsx` — Next.js App Router auto-generates correct `<link>` tags from file
-- **Supabase SSL + auth error handling** (`f458e41`): restored `ssl: { rejectUnauthorized: false }` in `prisma.ts` — was silently dropped in redesign commit, caused `DriverAdapterError` on every DB call in prod; added `try/catch` (was `try/finally`) to all 6 auth form handlers in login + signup pages so API errors surface to the user instead of silently resetting the button
-- **CommTemplate DB fallback + WA OTP UI** (`b664702`): `getTemplate()` in `comms.ts` catches all DB errors and returns in-memory defaults; `getTemplateName` in `superchat.ts` same guard; login + signup OTP step updated with dual icon (mail + WA) and copy mentioning both channels
-- **Robust OTP + WhatsApp channel** (`c650374`): `resend.ts` checks `{ error }` from `emails.send()` and throws; `sendOtpWhatsApp` added using Meta auth template `referral_otp_verification`; `notifyOtp()` fires email + WA in parallel via `after()`
-- **Stat counter + hero redesign** (`7efd7f0`): scroll-triggered count-up in `ReferralStatCounter`; dashboard hero → circle avatar badge + tier popover; Instagram share added
-- **Production DB**: migration `20260401025526_add_ambassador_leaderboard` applied to Supabase on 2026-04-03. All env vars now set in Vercel (incl. `SUPERCHAT_API_KEY`, `SUPERCHAT_WORKSPACE_ID`, `JWT_SECRET`, `ADMIN_JWT_SECRET`).
+- **Admin table nowrap fix** (current): `whiteSpace: 'nowrap'` on Source badge + Code cell in referrers table — was wrapping "Auto-enrolled"/"Self sign-up" and long referral codes
+- **Dead code removal** (current): removed duplicate `DashboardLoader`, `DotFlash`, `DogThinking` functions from `dashboard/page.tsx` (~130 lines); `LOADING_MESSAGES` moved to module level; `PageLoader` from shared component already in use
+- **Home page force-dynamic** (`6944730`): `export const dynamic = 'force-dynamic'` on `src/app/page.tsx` so `ui_community_stat` always fetches live from DB
+- **TENANT badge + admin columns** (`f5899d8`, `3944d8c`): TENANT badge next to name in admin referrers table; Joined + Source columns added; auto-enroll flow on `customer_type=Tenant` HubSpot event; upgrades existing referrers to `isTenant=true`
+- **Admin referrals tab + shared loader** (`bcfe620`): new Referrals tab (lazy-loads, status filter pills); `PageLoader` extracted to `src/components/PageLoader.tsx`; `getAllTemplates()` catches P2021 and falls back to in-memory defaults
+- **Pool exhaustion + dashboard resilience** (`26de88f`, `635407e`): `pg.Pool max: 1`; dashboard `fetchData` guards `!meRes.ok`; error + retry UI; Typeform `verifySignature` length check
+- **Contact-based HubSpot webhook + daily cron** (`a7a993f`): no deals, match by `refereeEmail`; `token_payment_status=Paid` → AGREEMENT_SIGNED; both payments + `move_in_date` passed → COMPLETED; daily cron at 01:00 UTC
+- **Production DB**: `CommTemplate` table created manually via SQL in Supabase (migration `20260331101716` was not auto-applied). All env vars set in Vercel. HubSpot Private App configured with 5 webhook subscriptions (added `customer_type`).
 
 ## What's Built
+- **HubSpot integration**: Private App developer webhooks (NOT Workflows). Subscriptions: `contact.propertyChange` for `token_payment_status`, `first_month_rent`, `tenant_security_deposit`, `customer_type` + `contact.creation`. Daily cron catches any move-ins missed by webhooks. HubSpot is read-only — our DB is source of truth.
 - **OTP auth**: email OTP + WhatsApp OTP for referrers (parallel via `notifyOtp()`), password for admins. `after()` built-in in Next.js 16 — no `experimental.after` flag.
 - **Button pattern**: all buttons need `btn-base` + variant (e.g. `btn-base btn-pastel-violet`). `btn-base` provides cursor, flex, hover/active. Variant alone has no interactivity.
 - **Comms system**: 15 CommTemplate keys across EMAIL/WHATSAPP/UI; auto-seeded; admin-editable without deploy.
-- **Admin panel**: 6 tabs. Neo-brutalist design — logo pill + "Admin" badge in nav; pill-shaped tab bar; `1.5px solid var(--brand)` + `2px 2px 0 var(--brand)` hard shadow on all cards.
+- **Admin panel**: 7 tabs (Overview, Referrers, Referrals, Redemptions, Milestones, Tiers, Comms). Neo-brutalist design. Referrals tab lazy-loads on first click with status filter pills.
 - **Dashboard hero**: circle 72px avatar (initial letter, tier-colored ring) → click opens inline tier ladder popover. "Hey, {Name}" serif greeting. Code box. WhatsApp + Instagram share side-by-side (2-col grid). No description text — clean.
 - **Dashboard quarterly standing**: rank widget, top-5 leaderboard list (opted-in names, anonymous otherwise), opt-in toggle with pill switch.
 - **Share text**: rendered server-side with `referralCode`, `lifetimeCount`, `tierBrag`. WA opens `wa.me/?text=...`. Instagram uses Web Share API on mobile; falls back to clipboard copy + opens instagram.com.
@@ -119,8 +136,13 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 - **Quarterly leaderboard** — uses calendar quarters (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec). Computed from `Referral.completedAt`. Public endpoint, no auth required.
 - **OTP delivery**: always use `notifyOtp()` from `notifications.ts` — fires email + WA in parallel, logs to `NotificationLog`. Never call `sendOtpEmail` directly from route handlers.
 - **Auth form handlers**: use `try/catch/finally` not `try/finally`. Also use `res.json().catch(() => ({}))` — when API returns a non-JSON 500, bare `res.json()` throws, `finally` silently resets the button, user sees nothing. The catch block must call `setError()`.
-- **`getTemplate()` never throws** — falls back to in-memory `DEFAULT_TEMPLATES` if DB unavailable. Safe to call from server components and route handlers without try/catch.
-- **WhatsApp OTP template**: Meta auth template `referral_otp_verification`, 1 variable (`{{1}}` = OTP). Approved 2026-04-03. Superchat UI doesn't support auth templates — configured directly via Meta dashboard.
+- **`getTemplate()` and `getAllTemplates()` never throw** — both fall back to in-memory `DEFAULT_TEMPLATES` if DB unavailable (table missing or connection error). Safe to call anywhere without try/catch.
+- **`pg.Pool max: 1`** — always set in `prisma.ts` for serverless. Default is 10; with concurrent Lambda instances this exhausts Supabase Session Pooler's connection limit (`MaxClientsInSessionMode`).
+- **Dashboard `fetchData`** — must check `!meRes.ok` before `setData(json)`. A 500 response sets data to `{error: "..."}` which is not `DashboardData` — accessing `data.referrer` crashes the render.
+- **`PageLoader`** — shared component at `src/components/PageLoader.tsx`. Pass a `messages: string[]` prop. Both dashboard and admin use it. `LOADING_MESSAGES` array lives at module level in each page file.
+- **WhatsApp OTP template**: Meta auth template `referral_otp_verification`, 1 variable (`{{1}}` = OTP). Approved 2026-04-03. Superchat UI doesn't support auth templates — configured directly via Meta dashboard. `sendOtpMetaDirect` is parked (403 — needs Business-type Meta app, not Facebook Login for Business). WA OTP failures are `console.log`, not `console.error`.
+- **HubSpot webhook setup**: must use Private App → Webhooks tab (NOT Automation → Workflows). Workflow builder doesn't expose `contact.propertyChange` as a trigger. Webhook URL: `https://flent-referral.vercel.app/api/webhooks/hubspot`.
+- **`findReferralByEmail`** — always orders by `createdAt: 'desc'`, excludes COMPLETED. If same referee email appears in multiple referrals (different referrers), most recent wins.
 - Resend lazily initialized — never instantiate at module level; fire via `after()` in route handlers
 - `window.location.href` for post-auth redirects; `router.push` bypasses proxy cookie check
 - Prisma v7: no `url` in datasource block; SSL config in `src/lib/prisma.ts` via adapter options
@@ -130,6 +152,7 @@ Flent Referral Engine — gamified referral program for Flent (Bangalore co-livi
 - **Auth page pattern**: pie-factory.svg overlay at opacity 0.05; logo pill = `{bg: var(--bg), border: 1.5px solid var(--brand), borderRadius: 999}`; card = `{border: 1.5px solid var(--brand), boxShadow: 4px 4px 0 var(--brand)}`
 - **Dev bypass**: `NODE_ENV !== 'production'` in `proxy.ts` + `/api/referrers/me` returns stub data including mock leaderboard/tier/share data — `/dashboard` fully viewable locally without auth or DB
 - **Multi-tier redemption**: any milestone where `streak >= referralsRequired` is independently claimable; `redeemableMilestones[]` empty when pending exists; streak resets on every claim
+- **Admin table cells with badges or codes**: always add `whiteSpace: 'nowrap'` to the `<td>` or `<span>` — text like "Auto-enrolled" and long referral codes wrap at narrow viewport widths
 
 <!-- VERCEL BEST PRACTICES START -->
 ## Best practices for developing on Vercel

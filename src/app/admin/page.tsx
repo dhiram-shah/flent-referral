@@ -323,14 +323,14 @@ export default function AdminDashboard() {
                           </div>
                           <p style={{ fontSize: 12, color: 'var(--muted)', margin: 0 }}>{r.email}</p>
                         </td>
-                        <td style={{ padding: '12px 16px' }}>
+                        <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                           <code style={{ background: 'var(--bg)', padding: '3px 8px', borderRadius: 6, fontSize: 12 }}>{r.referralCode}</code>
                         </td>
                         <td style={{ padding: '12px 16px', fontSize: 14 }}>
                           {r.progress?.currentStreakCount ?? 0} / {r.progress?.lifetimeCompletedCount ?? 0}
                         </td>
                         <td style={{ padding: '12px 16px' }}>
-                          <span style={{ background: r.isTenant ? '#EDE9FE' : '#DBEAFE', color: r.isTenant ? '#7C3AED' : '#1D4ED8', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 99 }}>
+                          <span style={{ background: r.isTenant ? '#EDE9FE' : '#DBEAFE', color: r.isTenant ? '#7C3AED' : '#1D4ED8', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 99, whiteSpace: 'nowrap' }}>
                             {r.isTenant ? 'Auto-enrolled' : 'Self sign-up'}
                           </span>
                         </td>
