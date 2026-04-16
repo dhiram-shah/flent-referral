@@ -1,9 +1,23 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Script from 'next/script'
 
 type Step = 'form' | 'otp' | 'success'
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: Record<string, unknown>) => void
+          renderButton: (el: HTMLElement, config: Record<string, unknown>) => void
+        }
+      }
+    }
+  }
+}
 
 export default function SignupPage() {
   const [step, setStep] = useState<Step>('form')
@@ -11,6 +25,7 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [referralCode, setReferralCode] = useState('')
   const [copied, setCopied] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
 
   const [form, setForm] = useState({ name: '', phone: '', email: '', city: '' })
   const [otp, setOtp] = useState('')
@@ -19,6 +34,57 @@ export default function SignupPage() {
   const [resendLoading, setResendLoading] = useState(false)
   const [resendMsg, setResendMsg] = useState('')
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const googleBtnRef = useRef<HTMLDivElement>(null)
+
+  const handleGoogleResponse = useCallback(async (response: { credential: string }) => {
+    setGoogleLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError((data as { error?: string }).error ?? 'Google sign-up failed. Please try again.')
+        return
+      }
+      const typed = data as { isNew?: boolean; referrer?: { referralCode: string } }
+      if (typed.isNew && typed.referrer?.referralCode) {
+        setReferralCode(typed.referrer.referralCode)
+        setStep('success')
+      } else {
+        // Existing user — go straight to dashboard
+        window.location.href = '/dashboard'
+      }
+    } catch {
+      setError('Google sign-up failed. Please try again.')
+    } finally {
+      setGoogleLoading(false)
+    }
+  }, [])
+
+  function initGoogle() {
+    if (!window.google || !googleBtnRef.current) return
+    window.google.accounts.id.initialize({
+      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      callback: handleGoogleResponse,
+    })
+    window.google.accounts.id.renderButton(googleBtnRef.current, {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      width: googleBtnRef.current.offsetWidth,
+      text: 'signup_with',
+      shape: 'pill',
+    })
+  }
+
+  useEffect(() => {
+    if (step === 'form') initGoogle()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
 
   function update(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -45,10 +111,14 @@ export default function SignupPage() {
     setLoading(true)
     setError('')
     try {
+      const payload: Record<string, string> = { name: form.name, email: form.email }
+      if (form.phone) payload.phone = form.phone
+      if (form.city) payload.city = form.city
+
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -69,17 +139,21 @@ export default function SignupPage() {
     setResendMsg('')
     setError('')
     try {
+      const payload: Record<string, string> = { name: form.name, email: form.email }
+      if (form.phone) payload.phone = form.phone
+      if (form.city) payload.city = form.city
+
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         setError((data as { error?: string }).error ?? 'Could not resend. Please try again.')
         return
       }
-      setResendMsg('Sent on both mail & WA.')
+      setResendMsg('Code sent to your email.')
       startResendCooldown()
     } catch {
       setError('Could not resend. Please try again.')
@@ -93,10 +167,14 @@ export default function SignupPage() {
     setLoading(true)
     setError('')
     try {
+      const payload: Record<string, string> = { name: form.name, email: form.email, otp }
+      if (form.phone) payload.phone = form.phone
+      if (form.city) payload.city = form.city
+
       const res = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, otp }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -123,6 +201,12 @@ export default function SignupPage() {
       className="min-h-screen flex items-center justify-center px-4 py-12"
       style={{ background: 'var(--bg)', position: 'relative', overflow: 'hidden' }}
     >
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+        onLoad={initGoogle}
+      />
+
       {/* Geometric pattern overlay */}
       <div
         aria-hidden="true"
@@ -163,8 +247,28 @@ export default function SignupPage() {
                 Join the program
               </h1>
               <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 28 }}>
-                Enter your details to get your unique referral code.
+                Sign up with Google or fill in your details.
               </p>
+
+              {/* Google Sign-In */}
+              <div
+                ref={googleBtnRef}
+                style={{ width: '100%', minHeight: 44, marginBottom: 4 }}
+              />
+              {googleLoading && (
+                <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--muted)', margin: '8px 0 0' }}>
+                  Setting up your account...
+                </p>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
+                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                <span style={{ color: 'var(--muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 1 }}>
+                  or
+                </span>
+                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              </div>
+
               <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <Field label="Full name" required>
                   <input
@@ -177,13 +281,12 @@ export default function SignupPage() {
                     style={inputStyle}
                   />
                 </Field>
-                <Field label="Mobile number" required>
+                <Field label="Mobile number (optional)">
                   <input
                     type="tel"
                     placeholder="9876543210"
                     value={form.phone}
                     onChange={(e) => update('phone', e.target.value)}
-                    required
                     style={inputStyle}
                   />
                 </Field>
@@ -226,14 +329,12 @@ export default function SignupPage() {
               <div style={{ textAlign: 'center', marginBottom: 28 }}>
                 <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
                   <MailIcon />
-                  <span style={{ color: 'var(--muted)', fontSize: 16, fontWeight: 300 }}>+</span>
-                  <WhatsAppIcon />
                 </div>
                 <h1 className="serif-italic" style={{ fontWeight: 600, fontSize: 24, marginBottom: 8 }}>
-                  Check Mail & WhatsApp
+                  Check your email
                 </h1>
                 <p style={{ color: 'var(--muted)', fontSize: 14 }}>
-                  A 6-digit code has been sent to you.
+                  A 6-digit code has been sent to your inbox.
                 </p>
               </div>
               <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -439,17 +540,6 @@ function MailIcon() {
         strokeWidth="1.6"
         strokeLinejoin="round"
         strokeLinecap="round"
-      />
-    </svg>
-  )
-}
-
-function WhatsAppIcon() {
-  return (
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M17.6 6.31999C16.8669 5.58141 15.9943 4.99596 15.033 4.59767C14.0716 4.19938 13.0406 3.99622 12 3.99999C10.6089 4.00135 9.24248 4.36819 8.03771 5.06377C6.83294 5.75935 5.83208 6.75926 5.13534 7.96335C4.4386 9.16745 4.07046 10.5335 4.06776 11.9246C4.06507 13.3158 4.42793 14.6832 5.12 15.89L4 20L8.2 18.9C9.35975 19.5452 10.6629 19.8891 11.99 19.9C14.0997 19.9001 16.124 19.0668 17.6222 17.5816C19.1205 16.0965 19.9715 14.0796 19.99 11.97C19.983 10.9173 19.7682 9.87634 19.3581 8.9068C18.948 7.93725 18.3505 7.05819 17.6 6.31999ZM12 18.53C10.8177 18.5308 9.65701 18.213 8.64 17.61L8.4 17.46L5.91 18.12L6.57 15.69L6.41 15.44C5.55925 14.0667 5.24174 12.429 5.51762 10.8372C5.7935 9.24545 6.64361 7.81015 7.9069 6.80322C9.1702 5.79628 10.7589 5.28765 12.3721 5.37368C13.9853 5.4597 15.511 6.13441 16.66 7.26999C17.916 8.49818 18.635 10.1735 18.66 11.93C18.6442 13.6859 17.9355 15.3645 16.6882 16.6006C15.441 17.8366 13.756 18.5301 12 18.53ZM15.61 13.59C15.41 13.49 14.44 13.01 14.26 12.95C14.08 12.89 13.94 12.85 13.81 13.05C13.6144 13.3181 13.404 13.5751 13.18 13.82C13.07 13.96 12.95 13.97 12.75 13.82C11.6097 13.3694 10.6597 12.5394 10.06 11.47C9.85 11.12 10.26 11.14 10.64 10.39C10.6681 10.3359 10.6827 10.2759 10.6827 10.215C10.6827 10.1541 10.6681 10.0941 10.64 10.04C10.64 9.93999 10.19 8.95999 10.03 8.56999C9.87 8.17999 9.71 8.23999 9.58 8.22999H9.19C9.08895 8.23154 8.9894 8.25465 8.898 8.29776C8.8066 8.34087 8.72546 8.403 8.66 8.47999C8.43562 8.69817 8.26061 8.96191 8.14676 9.25343C8.03291 9.54495 7.98287 9.85749 8 10.17C8.0627 10.9181 8.34443 11.6311 8.81 12.22C9.6622 13.4958 10.8301 14.5293 12.2 15.22C12.9185 15.6394 13.7535 15.8148 14.58 15.72C14.8552 15.6654 15.1159 15.5535 15.345 15.3915C15.5742 15.2296 15.7667 15.0212 15.91 14.78C16.0428 14.4856 16.0846 14.1583 16.03 13.84C15.94 13.74 15.81 13.69 15.61 13.59Z"
-        fill="var(--brand)"
       />
     </svg>
   )

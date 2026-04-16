@@ -15,21 +15,22 @@ import SmoothScroll from '@/components/SmoothScroll';
 
 export default async function Home() {
   return (
-    <SmoothScroll>
-      <div className="hero-pattern-wrapper">
-        <Nav />
-        <Hero />
-      </div>
-
-      <StatsBar />
-      <MarqueeBands />
-      <HowItWorks />
-      <ReferralStatBand />
-      <RewardsSection />
-      <FriendBento />
-      <CommunityBoard />
-      <FaqAccordion />
-      <Footer />
-    </SmoothScroll>
+    <>
+      <Nav />
+      <SmoothScroll>
+        <div className="hero-pattern-wrapper">
+          <Hero />
+        </div>
+        <StatsBar />
+        <MarqueeBands />
+        <HowItWorks />
+        <ReferralStatBand />
+        <RewardsSection />
+        <FriendBento />
+        <CommunityBoard />
+        <FaqAccordion />
+        <Footer />
+      </SmoothScroll>
+    </>
   );
 }

@@ -13,7 +13,7 @@ import { notifyWelcome } from '@/lib/notifications'
 
 const schema = z.object({
   name: z.string().min(2).max(100),
-  phone: z.string().min(10).max(15),
+  phone: z.string().min(10).max(15).optional(),
   email: z.string().email(),
   city: z.string().optional(),
   otp: z.string().length(6),
@@ -38,10 +38,12 @@ export async function POST(request: NextRequest) {
   let referrer = await prisma.referrer.findUnique({ where: { email } })
 
   if (!referrer) {
-    // Check phone uniqueness
-    const phoneExists = await prisma.referrer.findUnique({ where: { phone } })
-    if (phoneExists) {
-      return Response.json({ error: 'This phone number is already registered.' }, { status: 409 })
+    // Check phone uniqueness if provided
+    if (phone) {
+      const phoneExists = await prisma.referrer.findUnique({ where: { phone } })
+      if (phoneExists) {
+        return Response.json({ error: 'This phone number is already registered.' }, { status: 409 })
+      }
     }
 
     // Generate unique referral code
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     referrer = await prisma.referrer.create({
       data: {
         name,
-        phone,
+        phone: phone || null,
         email,
         city,
         referralCode,

@@ -32,8 +32,10 @@ enum AdminRole {
 model Referrer {
   id               String    @id @default(cuid())
   name             String
-  phone            String    @unique
+  phone            String?   @unique
   email            String    @unique
+  googleId         String?   @unique
+  authMethod       String    @default("otp")
   city             String?
   referralCode     String    @unique
   isTenant         Boolean   @default(false)

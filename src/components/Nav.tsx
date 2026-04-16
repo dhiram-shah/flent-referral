@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 
 export default function Nav() {
   return (
-    <div className="nav-wrapper">
+    <div className="nav-wrapper" style={{ backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
       <nav className="nav">
         <motion.div
           className="nav-logo"

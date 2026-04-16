@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     throw err
   }
 
-  after(() => notifyOtp({ email, phone: referrer.phone, name: referrer.name, otp, referrerId: referrer.id }).catch(console.error))
+  after(() => notifyOtp({ email, name: referrer.name, otp, referrerId: referrer.id }).catch(console.error))
 
   return Response.json({ status: 'otp_sent' })
 }

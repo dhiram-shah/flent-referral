@@ -1,6 +1,6 @@
 /**
- * Unified notification sender — fires both email and WhatsApp in parallel
- * and logs results to the DB. Never throws — failures are logged.
+ * Unified notification sender — fires email (and WhatsApp when phone available)
+ * in parallel and logs results to the DB. Never throws — failures are logged.
  */
 
 import { prisma } from './prisma'
@@ -19,7 +19,7 @@ interface Referrer {
   id: string
   name: string
   email: string
-  phone: string
+  phone?: string | null
 }
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://flent.in/referral-program'
@@ -29,67 +29,67 @@ async function fire(
   referrerId: string,
   event: NotifEvent,
   emailFn: () => Promise<void>,
-  waFn: () => Promise<void>
+  waFn?: () => Promise<void>
 ): Promise<void> {
-  const [emailResult, waResult] = await Promise.allSettled([emailFn(), waFn()])
+  const promises: Promise<PromiseSettledResult<void>>[] = [
+    Promise.allSettled([emailFn()]).then((r) => r[0]),
+  ]
+  if (waFn) {
+    promises.push(Promise.allSettled([waFn()]).then((r) => r[0]))
+  }
 
-  await prisma.notificationLog
-    .createMany({
-      data: [
-        {
-          referrerId,
-          channel: 'EMAIL',
-          event,
-          status: emailResult.status === 'fulfilled' ? 'SENT' : 'FAILED',
-        },
-        {
-          referrerId,
-          channel: 'WHATSAPP',
-          event,
-          status: waResult.status === 'fulfilled' ? 'SENT' : 'FAILED',
-        },
-      ],
+  const [emailResult, waResult] = await Promise.all(promises)
+
+  const logs = [
+    {
+      referrerId,
+      channel: 'EMAIL',
+      event,
+      status: emailResult.status === 'fulfilled' ? 'SENT' : 'FAILED',
+    },
+  ]
+  if (waResult) {
+    logs.push({
+      referrerId,
+      channel: 'WHATSAPP',
+      event,
+      status: waResult.status === 'fulfilled' ? 'SENT' : 'FAILED',
     })
-    .catch(console.error)
+  }
+
+  await prisma.notificationLog.createMany({ data: logs }).catch(console.error)
 
   if (emailResult.status === 'rejected') {
     console.error(`[Notify] Email ${event} failed:`, emailResult.reason)
   }
-  if (waResult.status === 'rejected') {
+  if (waResult?.status === 'rejected') {
     console.error(`[Notify] WhatsApp ${event} failed:`, waResult.reason)
   }
 }
 
 export async function notifyOtp(params: {
   email: string
-  phone: string
   name: string
   otp: string
   referrerId?: string
 }): Promise<void> {
-  const waFn = process.env.WHATSAPP_ACCESS_TOKEN
-    ? () => wa.sendOtpMetaDirect(params.phone, params.otp)
-    : () => wa.sendOtpWhatsApp(params.phone, params.otp)
-
-  const [emailResult, waResult] = await Promise.allSettled([
-    email.sendOtpEmail(params.email, params.name, params.otp),
-    waFn(),
-  ])
+  const emailResult = await email
+    .sendOtpEmail(params.email, params.name, params.otp)
+    .then(() => 'SENT' as const)
+    .catch((err) => {
+      console.error('[Notify] OTP email failed:', err)
+      return 'FAILED' as const
+    })
 
   if (params.referrerId) {
     await prisma.notificationLog
       .createMany({
         data: [
-          { referrerId: params.referrerId, channel: 'EMAIL', event: 'OTP_SENT', status: emailResult.status === 'fulfilled' ? 'SENT' : 'FAILED' },
-          { referrerId: params.referrerId, channel: 'WHATSAPP', event: 'OTP_SENT', status: waResult.status === 'fulfilled' ? 'SENT' : 'FAILED' },
+          { referrerId: params.referrerId, channel: 'EMAIL', event: 'OTP_SENT', status: emailResult },
         ],
       })
       .catch(console.error)
   }
-
-  if (emailResult.status === 'rejected') console.error('[Notify] OTP email failed:', emailResult.reason)
-  // WhatsApp OTP is best-effort — log as info until Meta Cloud API access is confirmed working
-  if (waResult.status === 'rejected') console.log('[Notify] OTP WhatsApp skipped:', (waResult.reason as Error)?.message ?? waResult.reason)
 }
 
 export async function notifyWelcome(referrer: Referrer, referralCode: string): Promise<void> {
@@ -97,7 +97,9 @@ export async function notifyWelcome(referrer: Referrer, referralCode: string): P
     referrer.id,
     'WELCOME',
     () => email.sendWelcomeEmail(referrer.email, referrer.name, referralCode, DASHBOARD_URL),
-    () => wa.sendWelcomeWhatsApp(referrer.phone, referrer.name, referralCode, DASHBOARD_URL)
+    referrer.phone
+      ? () => wa.sendWelcomeWhatsApp(referrer.phone!, referrer.name, referralCode, DASHBOARD_URL)
+      : undefined
   )
 }
 
@@ -109,7 +111,9 @@ export async function notifyReferralInterested(
     referrer.id,
     'REFERRAL_INTERESTED',
     () => email.sendReferralStatusEmail(referrer.email, referrer.name, refereeName, 'interested'),
-    () => wa.sendReferralInterestedWhatsApp(referrer.phone, referrer.name, refereeName)
+    referrer.phone
+      ? () => wa.sendReferralInterestedWhatsApp(referrer.phone!, referrer.name, refereeName)
+      : undefined
   )
 }
 
@@ -121,7 +125,9 @@ export async function notifyReferralSigned(
     referrer.id,
     'REFERRAL_SIGNED',
     () => email.sendReferralStatusEmail(referrer.email, referrer.name, refereeName, 'signed'),
-    () => wa.sendReferralSignedWhatsApp(referrer.phone, referrer.name, refereeName)
+    referrer.phone
+      ? () => wa.sendReferralSignedWhatsApp(referrer.phone!, referrer.name, refereeName)
+      : undefined
   )
 }
 
@@ -141,13 +147,15 @@ export async function notifyReferralCompleted(
         'completed',
         rewardName
       ),
-    () =>
-      wa.sendMilestoneUnlockedWhatsApp(
-        referrer.phone,
-        referrer.name,
-        rewardName ?? 'your next reward',
-        DASHBOARD_URL
-      )
+    referrer.phone
+      ? () =>
+          wa.sendMilestoneUnlockedWhatsApp(
+            referrer.phone!,
+            referrer.name,
+            rewardName ?? 'your next reward',
+            DASHBOARD_URL
+          )
+      : undefined
   )
 }
 
@@ -159,6 +167,8 @@ export async function notifyRedemptionConfirmed(
     referrer.id,
     'REDEMPTION_CONFIRMED',
     () => email.sendRedemptionConfirmedEmail(referrer.email, referrer.name, rewardName),
-    () => wa.sendRedemptionFulfilledWhatsApp(referrer.phone, referrer.name, rewardName)
+    referrer.phone
+      ? () => wa.sendRedemptionFulfilledWhatsApp(referrer.phone!, referrer.name, rewardName)
+      : undefined
   )
 }

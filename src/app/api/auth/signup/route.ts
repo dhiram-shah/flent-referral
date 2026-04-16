@@ -6,7 +6,7 @@ import { notifyOtp } from '@/lib/notifications'
 
 const schema = z.object({
   name: z.string().min(2).max(100),
-  phone: z.string().min(10).max(15),
+  phone: z.string().min(10).max(15).optional(),
   email: z.string().email(),
   city: z.string().optional(),
 })
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
   // Check if already registered
   const existing = await prisma.referrer.findFirst({
-    where: { OR: [{ email }, { phone }] },
+    where: { OR: [{ email }, ...(phone ? [{ phone }] : [])] },
   })
 
   if (existing) {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       if (res) return res
       throw err
     }
-    after(() => notifyOtp({ email, phone: existing.phone, name: existing.name, otp, referrerId: existing.id }).catch(console.error))
+    after(() => notifyOtp({ email, name: existing.name, otp, referrerId: existing.id }).catch(console.error))
     return Response.json({ status: 'otp_sent', message: 'OTP sent to your email.', existing: true })
   }
 
@@ -67,6 +67,6 @@ export async function POST(request: NextRequest) {
     throw err
   }
 
-  after(() => notifyOtp({ email, phone, name, otp }).catch(console.error))
+  after(() => notifyOtp({ email, name, otp }).catch(console.error))
   return Response.json({ status: 'otp_sent', message: 'OTP sent to your email.' })
 }

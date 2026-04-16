@@ -143,7 +143,7 @@ type ReferralForCompletion = {
   referrerId: string
   refereeName: string
   referrer: {
-    id: string; name: string; email: string; phone: string
+    id: string; name: string; email: string; phone?: string | null
     progress: { currentStreakCount: number; lifetimeCompletedCount: number } | null
   }
 }
